@@ -10,6 +10,7 @@ Var CVDIR_PRODUCT_NAME
 Var CVDIR_DEFAULT_DOC
 Function CreateVDir
  
+DetailPrint "Creating virtual directory $CVDIR_VIRTUAL_NAME";
 ;Open a VBScript File in the temp dir for writing
 DetailPrint "Creating $TEMP\createVDir.vbs";
 FileOpen $0 "$TEMP\createVDir.vbs" w
@@ -90,6 +91,7 @@ Var DVDIR_VIRTUAL_NAME
 Var DVDIR_PRODUCT_NAME
 Function un.DeleteVDir
  
+DetailPrint "Deleting virtual directory $DVDIR_VIRTUAL_NAME";
 ;Open a VBScript File in the temp dir for writing
 DetailPrint "Creating $TEMP\deleteVDir.vbs";
 FileOpen $0 "$TEMP\deleteVDir.vbs" w

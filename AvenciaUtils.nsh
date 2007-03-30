@@ -3,15 +3,14 @@
 !DEFINE AVENCIA_UTILS_IMPORT "yup"
 
 ; This contains a bunch of utility functions for doing basic things that are common to many installers.
+; These are basic things like saving install/uninstall information, copying standard files
+; or common paths, etc.
 ; These require a few defines:
 ; !DEFINE APP_NAME "NameForYourApp_WithoutSpaces" ; used for folders, registry keys, etc.
-; !DEFINE CONFIG_DIR "WhereAreTheConfigFiles" ; tells Web.config and App.configs to look here
-; !DEFINE TEPLATES_DIR "WhereisTokenSwap.exe"
-; The name defined on the "Name application name" line is used for display names.
+; The name defined on the 'Name "application name"' line is used for display names.
 
 ; Some standard defines used in multiple places.
 !DEFINE UNINST_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
-!DEFINE UNINSTALLER_FILE "$INSTDIR\Uninstall${APP_NAME}.exe"
 
 ; Tell to use the Avencia icons.  You can override this by setting them before importing this file.
 !IFNDEF MUI_ICON
@@ -22,11 +21,81 @@
 !ENDIF
 
 ;------------------------------------------------------------------------------
+; Saves information needed at uninstall time to the appropriate registry key.
+; KEY - A simple string key, certain ones (such as "DisplayName") have special
+;       meaning to the Add/Remove Programs dialog.
+; VALUE - The value you'd like saved.
+!MACRO SaveUninstallValue KEY VALUE
+  WriteRegStr HKLM ${UNINST_REG_KEY} "${KEY}" "${VALUE}"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Saves information needed at uninstall time to the appropriate registry key.
+; KEY - A simple string key to look up.
+; DEST_VAR - the variable to insert the value into.  Unset values will be "".
+!MACRO GetUninstallValue KEY DEST_VAR
+  ReadRegStr ${DEST_VAR} HKLM ${UNINST_REG_KEY} "${KEY}"
+!MACROEND
+
+;------------------------------------------------------------------------------
+;icon is a filename, like "avencia16.ico"
+;path is a path NOT ending in a "\".
+!MACRO SaveStandardUninstallInfo ADDREMOVE_ICON ICON_PATH
+  ; Show us in add/remove programs
+  ; the first two values are required
+  !INSERTMACRO SaveUninstallValue "DisplayName" "$(^Name)"
+  !DEFINE UNINSTALLER_FILE "$INSTDIR\Uninstall${APP_NAME}.exe"
+  !INSERTMACRO SaveUninstallValue "UninstallString" "${UNINSTALLER_FILE}"
+  ; Icon and other misc info.
+  !INSERTMACRO SaveUninstallValue "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
+  !INSERTMACRO SaveUninstallValue "Publisher" "Avencia Incorporated"
+  !INSERTMACRO SaveUninstallValue "NoModify" "1"
+  !INSERTMACRO SaveUninstallValue "NoRepair" "1"
+  !INSERTMACRO SaveUninstallValue "InstallLocation" "$INSTDIR"
+
+  !IFDEF APP_MAJOR_VERSION
+    !INSERTMACRO SaveUninstallValue "VersionMajor" "${APP_MAJOR_VERSION}"
+  !ENDIF
+  !IFDEF APP_MINOR_VERSION
+    !INSERTMACRO SaveUninstallValue "VersionMinor" "${APP_MAJOR_VERSION}"
+  !ENDIF
+
+  ; Create an uninstaller.
+  SetOutPath $INSTDIR
+  File ${ICON_PATH}\${ADDREMOVE_ICON}
+  WriteUninstaller "${UNINSTALLER_FILE}"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Removes the icon, registry keys, and uninstaller file itself.
+!MACRO RemoveUninstallInfo
+  Push $R0
+
+  !INSERTMACRO GetUninstallValue "UninstallString" $R0
+  ; Remove us from the add/remove programs list.
+  DeleteRegKey HKLM ${UNINST_REG_KEY}
+  StrCmp $R0 "" done
+    ; Delete the uninstaller file if we know where it was.
+    DetailPrint "Deleting uninstaller file $R0"
+    ; If this uninstaller is being run programatically, a delete on its exe will
+    ; not succeed.  So set /REBOOTOK so that even if we can't delete it now, it'll
+    ; get deleted when we reboot.
+    Delete /REBOOTOK "$R0"
+  done:
+
+  Pop $R0
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; This function checks for the following:
 ; 1) That there isn't another copy of this installer running.
 ; 2) That there is not an old version of the application.
 ; 2.1) If there is, it gives the user the option of uninstalling.
 Function StartupChecks
+  Push $R0
+  Push $R1
+
+  ; This pushes something onto the stack, so pop it out in $R0
   System::Call 'kernel32::CreateMutexA(i 0, i 0, t "${APP_NAME}_Setup_Mutex") i .r1 ?e'
   Pop $R0
  
@@ -35,153 +104,75 @@ Function StartupChecks
     Abort
 
   ; Check for the old version.
-  ReadRegStr $R0 HKLM ${UNINST_REG_KEY} "UninstallString"
+  !INSERTMACRO GetUninstallValue "UninstallString" $R0
   StrCmp $R0 "" continue_install
-    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-      "$(^Name) is already installed. $\n$\nClick `OK` to remove the \
-      previous version or `Cancel` to cancel this upgrade." \
-      IDOK uninst
-      Abort
+    !INSERTMACRO GetUninstallValue "InstallLocation" $R1
+    StrCmp $R1 "" cant_uninstall can_uninstall
+    cant_uninstall:
+      MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
+        "$(^Name) is already installed. $\n$\nThe installed version \
+        is too old to be automatically uninstalled.  You can uninstall \
+        the old version using the Add/Remove Programs dialog.$\n$\n \
+        Do you wish to install anyway (not recommended)?" \
+        IDYES continue_install
+        Abort
+    can_uninstall:
+      MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION|MB_DEFBUTTON1 \
+        "$(^Name) is already installed. $\n$\nDo you want to uninstall \
+        the other copy before installing this one (highly recommended)?" \
+        IDYES uninst IDNO continue_install
+        Abort
   
     ;Run the uninstaller
     uninst:
       ClearErrors
-      ExecWait '$R0 _?=$INSTDIR' ;Do not copy the uninstaller to a temp file
+      ; ExecWait doesn't actually wait, so instead we use nsExec.
+      ; R0 contains the uninstaller file, R1 contains the old installed path.
+      nsExec::ExecToLog '$R0 _?=$R1'
  
       IfErrors uninstall_failed continue_install
       uninstall_failed:
-        MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-          "Uninstall of old version failed.  $\n$\nClick 'OK' to try to install the \
-          new version anyway, or 'Cancel' to quit." \
-        IDOK continue_install
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
+          "Uninstall of old version failed.  $\n$\nTry to install the new \
+          version anyway?" \
+        IDYES continue_install
         Abort
   continue_install:
+
+  Pop $R1
+  Pop $R0
 FunctionEnd
 
 ;------------------------------------------------------------------------------
-;icon is a filename, like "avencia16.ico"
-;path is a path NOT ending in a "\".
-!MACRO SaveUninstallInfo ADDREMOVE_ICON ICON_PATH
-  ; Show us in add/remove programs
-  ; required
-  WriteRegStr HKLM ${UNINST_REG_KEY} "DisplayName" "$(^Name)"
-  ; required
-  WriteRegStr HKLM ${UNINST_REG_KEY} "UninstallString" "${UNINSTALLER_FILE}"
-  ; Icon and other misc info.
-  WriteRegStr HKLM ${UNINST_REG_KEY} "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
-  WriteRegStr HKLM ${UNINST_REG_KEY} "Publisher" "Avencia Incorporated"
-  WriteRegStr HKLM ${UNINST_REG_KEY} "NoModify" "1"
-  WriteRegStr HKLM ${UNINST_REG_KEY} "NoRepair" "1"
-
-  ; Create an uninstaller.
-  WriteUninstaller "${UNINSTALLER_FILE}"
-  SetOutPath $INSTDIR
-  File ${ICON_PATH}\${ADDREMOVE_ICON}
-!MACROEND
-
-;------------------------------------------------------------------------------
-; Removes the icon, registry keys, and uninstaller file itself.
-!MACRO RemoveUninstallInfo
-  ; Remove us from the add/remove programs list.
-  DeleteRegKey HKLM ${UNINST_REG_KEY}
-  ; Delete the uninstaller file.
-  Delete "${UNINSTALLER_FILE}"
-!MACROEND
-
-;------------------------------------------------------------------------------
 ; The log directory is almost always the same thing.
-!DEFINE STANDARD_LOG_DIR "$INSTDIR\log"
-!MACRO StandardLogFileSection
+!MACRO StandardLogFileSection LOG_DIR
   ; We don't have an uninstall section for log files because they are always left behind.
   Section "Log Files"
-    SetOutPath ${STANDARD_LOG_DIR}
+    SetOutPath ${LOG_DIR}
     ; Let everyone write log files, since the IIS user will need to write them.
-    nsExec::ExecToLog '"cacls.exe" "${STANDARD_LOG_DIR}" /T /E /G Everyone:W'
+    nsExec::ExecToLog '"cacls.exe" "${LOG_DIR}" /T /E /G Everyone:W'
   SectionEnd
 !MACROEND
 
 ;------------------------------------------------------------------------------
-; Opens a new merge file and writes the header information.
-!MACRO OpenMergeFile FILE_NAME OUT_FILE_HANDLE
-  FileOpen ${OUT_FILE_HANDLE} ${FILE_NAME} w
-  FileWrite ${OUT_FILE_HANDLE} '<?xml version="1.0" encoding="utf-8" ?>$\r$\n'
-  FileWrite ${OUT_FILE_HANDLE} '<MERGE>$\r$\n'
+; This macro ensures that the value in VALUE ends with the string END_WITH.
+; If VALUE is "Test" and END_WITH is "\" then this will change VALUE to "Test\".
+; On the other hand, if VALUE was "Test2\", it would be unchanged.
+!MACRO EnsureEndsWith VALUE END_WITH
+  Push $R0
+  Push $R1
+  Push $R2
+
+  StrLen $R0 ${VALUE} ; how long is the ending string
+  IntOp $R1 0 - $R0   ; how far to offset back from the end of the string
+  StrCpy $R2 ${VALUE} 1 -1 ;take N chars starting N from the end of VALUE put in R2
+  StrCmp $R2 ${END_WITH} done ;if the last N chars = END_WITH, good.
+    StrCpy ${VALUE} "${VALUE}${END_WITH}" ; otherwise, append END_WITH
+  done:
+
+  Pop $R2
+  Pop $R1
+  Pop $R0
 !MACROEND
 
-;------------------------------------------------------------------------------
-; Writes the token/value pair to the merge file.
-!MACRO WriteToken MERGE_FILE_HANDLE TOKEN VALUE
-  FileWrite ${MERGE_FILE_HANDLE} '<TOKEN name="@${TOKEN}@" value="${VALUE}"/>$\r$\n'
-!MACROEND
-
-;------------------------------------------------------------------------------
-; Finishes and closes the merge file.
-!MACRO CloseMergeFile FILE_HANDLE
-  FileWrite ${FILE_HANDLE} '</MERGE>$\r$\n'
-  FileClose ${FILE_HANDLE}
-!MACROEND
-
-; Used by the TokenSwap macro.
-!IFNDEF TOKENSWAP_LOCATION
-  !DEFINE TOKENSWAP_LOCATION "${TEMPLATES_DIR}\TokenSwap.exe"
-!ENDIF
-;------------------------------------------------------------------------------
-; Executes tokenswap.
-; Assumes TokenSwap.exe is in TEMPLATES_DIR.  This can be overridden by defining
-; TOKENSWAP_LOCATION before importing this file.
-!MACRO TokenSwap TEMPLATE_FILE MERGE_FILE DESTINATION_DIR
-  nsExec::ExecToLog '"${TOKENSWAP_LOCATION}" -mFile "${MERGE_FILE}" -tFiles "${TEMPLATE_FILE}" -dDir "${DESTINATION_DIR}" -nopause'
-!MACROEND
-
-;------------------------------------------------------------------------------
-; If you need nothing swapped except the log and config dir (which is a common case)
-; you can use this macro.
-; Relies on CONFIG_DIR and TEMPLATES_DIR (needs TokenSwap).
-; Makes a .mer file, calls TokenSwap.
-!MACRO SwapStandardInstallTokens STD_SWAP_FROM_FILE STD_SWAP_TO_DIR
-  !INSERTMACRO OpenMergeFile "${STD_SWAP_TO_DIR}\install.mer" $0
-  !INSERTMACRO WriteToken $0 "logdir" ${STANDARD_LOG_DIR}
-  !INSERTMACRO WriteToken $0 "configdir" ${CONFIG_DIR}
-  !INSERTMACRO CloseMergeFile $0
-  !INSERTMACRO TokenSwap ${STD_SWAP_FROM_FILE} "${STD_SWAP_TO_DIR}\install.mer" ${STD_SWAP_TO_DIR}
-!MACROEND
-
-;------------------------------------------------------------------------------
-; Call this macro to create web folders (web applications or web services).
-!MACRO WebFolder SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC
-  ; Includes this for doing the virtual directory creation/deletion.
-  !INCLUDE "VirtualDirectory.nsh"
-  Section "Web_${DISPLAY_NAME}"
-    SetOutPath ${DEST_REAL}\templates
-    File ${SOURCE}\Web.config
-    SetOutPath ${DEST_REAL}
-    File ${SOURCE}\*.as?x
-    File /nonfatal ${SOURCE}\*.htm
-    File /nonfatal ${SOURCE}\*.xml
-    SetOutPath ${DEST_REAL}\xsd
-    File /nonfatal ${SOURCE}\xsd\* ; may not be any xsd if this isn't a web service.
-    SetOutPath ${DEST_REAL}\controls
-    File /nonfatal ${SOURCE}\controls\*.as?x ; may not be any custom controls
-    SetOutPath ${DEST_REAL}\images
-    File /nonfatal ${SOURCE}\images\*
-    SetOutPath ${DEST_REAL}\styles
-    File /nonfatal ${SOURCE}\styles\*
-    SetOutPath ${DEST_REAL}\bin
-    File ${SOURCE}\bin\*.dll
-
-    !INSERTMACRO SwapStandardInstallTokens "${DEST_REAL}\templates\Web.config" "${DEST_REAL}"
-    StrCpy $CVDIR_VIRTUAL_NAME "${DEST_VIRT}"
-    StrCpy $CVDIR_REAL_PATH "${DEST_REAL}"
-    StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
-    StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
-    Call CreateVDir
-  SectionEnd
-
-  Section "un.Web_${DISPLAY_NAME}"
-    StrCpy $DVDIR_VIRTUAL_NAME "${DEST_VIRT}"
-    StrCpy $DVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
-    Call un.DeleteVDir
-    RmDir /r "${DEST_REAL}"
-  SectionEnd
-!MACROEND
 !ENDIF ;AVENCIA_UTILS_IMPORT
