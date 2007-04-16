@@ -12,6 +12,7 @@
 ; SVC_EXE - The executable the service will run.
 ; SVC_DISPLAY - The user-friendly display name for the service.
 ; MERGE_FILE - If non-blank, we'll check for this merge file and if present, execute the CFG_MERGE_CMD
+;              If blank, config files are assumed to already be correct.
 ; CFG_MERGE_CMD - The command to run to merge the config files.
 !MACRO CreateAndConfigAndStartService SVC_NAME SVC_EXE SVC_DISPLAY MERGE_FILE CFG_MERGE_CMD
   Push $R0
@@ -21,7 +22,7 @@
   nsExec::ExecToLog '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
 
   ; If we were given no merge file, skip the merge part and just start the service.
-  StrCmp ${MERGE_FILE} "" start
+  StrCmp "${MERGE_FILE}" "" start
   ; After a fresh install, there are no config files.  Check and see if there is a merge file.
   FindFirst $R0 $R1 "${MERGE_FILE}"
   ; If there is a merge file, merge it.
@@ -43,6 +44,9 @@
   Pop $R0
 !MACROEND
 
+;------------------------------------------------------------------------------
+; Stops and deletes the windows service.
+; SVC_NAME - The unique name of the service.
 !MACRO StopAndDeleteService SVC_NAME
   DetailPrint "Stopping service ${SVC_NAME}..."
   nsExec::ExecToLog '"sc.exe" stop ${SVC_NAME}'

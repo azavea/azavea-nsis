@@ -39,8 +39,9 @@
 ;               "MyCustomPage.ini".
 ; CUSTOM_HEADER - The text at the top of the custom page.
 ; CUSTOM_MESSAGE - The more detailed text for the page.
-!MACRO AvCustomPage CUSTOM_NAME CUSTOM_HEADER CUSTOM_MESSAGE
-  Page custom ${CUSTOM_NAME}_FUNC
+; ONLEAVE_FUNC - The function to call when leaving the page.  May be "".
+!MACRO AvCustomPage CUSTOM_NAME CUSTOM_HEADER CUSTOM_MESSAGE ONLEAVE_FUNC
+  Page custom ${CUSTOM_NAME}_FUNC ${ONLEAVE_FUNC}
   !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
 
   Function ${CUSTOM_NAME}_FUNC

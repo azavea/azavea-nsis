@@ -12,14 +12,6 @@
 ; Some standard defines used in multiple places.
 !DEFINE UNINST_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 
-; Tell to use the Avencia icons.  You can override this by setting them before importing this file.
-!IFNDEF MUI_ICON
-  !DEFINE MUI_ICON "Avencia Installer.ico"
-!ENDIF
-!IFNDEF MUI_UNICON
-  !DEFINE MUI_UNICON "Avencia Uninstaller.ico"
-!ENDIF
-
 ;------------------------------------------------------------------------------
 ; Saves information needed at uninstall time to the appropriate registry key.
 ; KEY - A simple string key, certain ones (such as "DisplayName") have special
@@ -150,7 +142,7 @@ FunctionEnd
   Section "Log Files"
     SetOutPath ${LOG_DIR}
     ; Let everyone write log files, since the IIS user will need to write them.
-    nsExec::ExecToLog '"cacls.exe" "${LOG_DIR}" /T /E /G Everyone:W'
+    !INSERTMACRO SetPermissions ${LOG_DIR} "Everyone" "W"
   SectionEnd
 !MACROEND
 
@@ -163,14 +155,36 @@ FunctionEnd
   Push $R1
   Push $R2
 
-  StrLen $R0 ${VALUE} ; how long is the ending string
+  StrLen $R0 ${END_WITH} ; how long is the ending string
   IntOp $R1 0 - $R0   ; how far to offset back from the end of the string
-  StrCpy $R2 ${VALUE} 1 -1 ;take N chars starting N from the end of VALUE put in R2
-  StrCmp $R2 ${END_WITH} done ;if the last N chars = END_WITH, good.
+  StrCpy $R2 ${VALUE} $R0 $R1 ;take N chars starting N from the end of VALUE put in R2
+  StrCmp $R2 ${END_WITH} +2 ;if the last N chars = END_WITH, good.
     StrCpy ${VALUE} "${VALUE}${END_WITH}" ; otherwise, append END_WITH
-  done:
 
   Pop $R2
+  Pop $R1
+  Pop $R0
+!MACROEND
+
+;------------------------------------------------------------------------------
+; This macro ensures that the file/directory "PATH" allows "USER" to have
+; "PERMISSION.
+; PATH: The file or directory, a trailing slash is optional for directories.
+; USER: The user, must be known to the machine (this won't make up new users).
+; PERMISSION: "R" for read, "W" for write, "F" for full control (see cacls.exe).
+!MACRO SetPermissions PATH USER PERMISSION
+  Push $R0
+  Push $R1
+
+  StrCpy $R1 "${PATH}"
+
+  ; Check if the PATH has a slash, if so we'll need to chop it off.
+  StrCpy $R0 $R1 1 -1 ;take 1 chars starting 1 from the end of VALUE, put in R2
+  StrCmp $R0 "\" 0 +2 ;if the last char = \, need to truncate.
+    StrCpy $R1 $R1 -1 ; truncate
+
+  DetailPrint 'Setting permissions: "cacls.exe" "$R1" /T /E /G ${USER}:${PERMISSION}'
+  nsExec::ExecToLog '"cacls.exe" "$R1" /T /E /G ${USER}:${PERMISSION}'
   Pop $R1
   Pop $R0
 !MACROEND
