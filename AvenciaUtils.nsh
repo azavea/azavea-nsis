@@ -189,4 +189,82 @@ FunctionEnd
   Pop $R0
 !MACROEND
 
+;------------------------------------------------------------------------------
+; This function is called by the IndexOf macro, which is probably what you want to call.
+Function IndexOf
+Exch $R0
+Exch
+Exch $R1
+Push $R2
+Push $R3
+ 
+ StrCpy $R3 $R0
+ StrCpy $R0 -1
+ IntOp $R0 $R0 + 1
+  StrCpy $R2 $R3 1 $R0
+  StrCmp $R2 "" +2
+  StrCmp $R2 $R1 +2 -3
+ 
+ StrCpy $R0 -1
+ 
+Pop $R3
+Pop $R2
+Pop $R1
+Exch $R0
+FunctionEnd
+ 
+;------------------------------------------------------------------------------
+; Taken from the NSIS code wiki.
+; For the default behaviour of StrCpy, IndexOf returns the character index as
+; zero-based, whereas RIndexOf does not (starts at 1 from the end).
+; Usage:
+; ${IndexOf}  $R0 "blah" "a" ; $R0 = 2
+; Appears that it will return -1 if not found.
+!macro IndexOf Var Str Char
+Push "${Char}"
+Push "${Str}"
+ Call IndexOf
+Pop "${Var}"
+!macroend
+!define IndexOf "!insertmacro IndexOf"
+ 
+;------------------------------------------------------------------------------
+; This function is called by the RIndexOf macro, which is probably what you want to call.
+Function RIndexOf
+Exch $R0
+Exch
+Exch $R1
+Push $R2
+Push $R3
+ 
+ StrCpy $R3 $R0
+ StrCpy $R0 0
+ IntOp $R0 $R0 + 1
+  StrCpy $R2 $R3 1 -$R0
+  StrCmp $R2 "" +2
+  StrCmp $R2 $R1 +2 -3
+ 
+ StrCpy $R0 -1
+ 
+Pop $R3
+Pop $R2
+Pop $R1
+Exch $R0
+FunctionEnd
+ 
+;------------------------------------------------------------------------------
+; Taken from the NSIS code wiki.
+; For the default behaviour of StrCpy, IndexOf returns the character index as
+; zero-based, whereas RIndexOf does not (starts at 1 from the end).
+; Usage:
+; ${RIndexOf} $R0 "blah" "b" ; $R0 = 4
+; Appears that it will return -1 if not found.
+!macro RIndexOf Var Str Char
+Push "${Char}"
+Push "${Str}"
+ Call RIndexOf
+Pop "${Var}"
+!macroend
+!define RIndexOf "!insertmacro RIndexOf"
+
 !ENDIF ;AVENCIA_UTILS_IMPORT
