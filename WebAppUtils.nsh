@@ -11,6 +11,8 @@
 
 ;------------------------------------------------------------------------------
 ; Call this macro to create web folders (web applications or web services).
+; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes) that you
+; will have to take care of in your specific installer.
 !MACRO WebFolder SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC TOKENSWAP_LOC
   Section "Web_${DISPLAY_NAME}"
     SetOutPath ${DEST_REAL}\templates
@@ -19,6 +21,8 @@
     File /r ${SOURCE}\*.as?x
     File /nonfatal ${SOURCE}\*.htm
     File /nonfatal ${SOURCE}\*.xml
+    File /nonfatal /r ${SOURCE}\*.sitemap
+    File /nonfatal /r ${SOURCE}\*.master
     SetOutPath ${DEST_REAL}\xsd
     File /nonfatal ${SOURCE}\xsd\* ; may not be any xsd if this isn't a web service.
     SetOutPath ${DEST_REAL}\images
