@@ -19,8 +19,9 @@
     File ${SOURCE}\Web.config
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
-    File /nonfatal ${SOURCE}\*.htm
-    File /nonfatal ${SOURCE}\*.xml
+    File /nonfatal /r ${SOURCE}\*.htm
+    File /nonfatal /r ${SOURCE}\*.xml
+    File /nonfatal /r ${SOURCE}\*.js
     File /nonfatal /r ${SOURCE}\*.sitemap
     File /nonfatal /r ${SOURCE}\*.master
     SetOutPath ${DEST_REAL}\xsd
