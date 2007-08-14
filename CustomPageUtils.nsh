@@ -39,12 +39,29 @@
 ;               "MyCustomPage.ini".
 ; CUSTOM_HEADER - The text at the top of the custom page.
 ; CUSTOM_MESSAGE - The more detailed text for the page.
-; ONLEAVE_FUNC - The function to call when leaving the page.  May be "".
-!MACRO AvCustomPage CUSTOM_NAME CUSTOM_HEADER CUSTOM_MESSAGE ONLEAVE_FUNC
-  Page custom ${CUSTOM_NAME}_FUNC ${ONLEAVE_FUNC}
-  !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
+; ON_LEAVE_FUNC - The function to call when leaving the page.  May be "".
+!MACRO AvCustomPage CUSTOM_NAME CUSTOM_HEADER CUSTOM_MESSAGE ON_LEAVE_FUNC
+  !INSERTMACRO AvCustomPageWithPre "${CUSTOM_NAME}" "${CUSTOM_HEADER}" "${CUSTOM_MESSAGE}" "" "${ON_LEAVE_FUNC}"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; This macro inserts a custom page using "$CUSTOM_NAME".ini.
+; Insert this macro in the list of pages in the order you'd like it to appear.
+; CUSTOM_NAME - The name of the ini file (I.E. "MyCustomPage" if the ini is
+;               "MyCustomPage.ini".
+; CUSTOM_HEADER - The text at the top of the custom page.
+; CUSTOM_MESSAGE - The more detailed text for the page.
+; ON_ENTER_FUNC - The function to call when entering the page.  May be "".
+; ON_LEAVE_FUNC - The function to call when leaving the page.  May be "".
+!MACRO AvCustomPageWithPre CUSTOM_NAME CUSTOM_HEADER CUSTOM_MESSAGE ON_ENTER_FUNC ON_LEAVE_FUNC
+  Page custom ${CUSTOM_NAME}_FUNC ${ON_LEAVE_FUNC}
+  !INSERTMACRO MUI_RESERVEFILE_INSTALLOPTIONS
 
   Function ${CUSTOM_NAME}_FUNC
+    !IF "${ON_ENTER_FUNC}" != ""
+      Call ${ON_ENTER_FUNC}
+    !ENDIF
+
     !INSERTMACRO MUI_HEADER_TEXT "${CUSTOM_HEADER}" "${CUSTOM_MESSAGE}"
     !INSERTMACRO MUI_INSTALLOPTIONS_DISPLAY "${CUSTOM_NAME}.ini"
   FunctionEnd
