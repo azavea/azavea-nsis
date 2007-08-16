@@ -34,6 +34,13 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; Executes tokenswap against an entire directory.  Tokenswap's exe must be TOKENSWAP_LOCATION
+!MACRO TokenSwapDir TEMPLATE_DIR MERGE_FILE DESTINATION_DIR TOKENSWAP_LOCATION
+  DetailPrint "Swapping tokens in files in ${TEMPLATE_DIR}"
+  nsExec::ExecToLog '"${TOKENSWAP_LOCATION}" -mFile "${MERGE_FILE}" -tDir "${TEMPLATE_DIR}" -dDir "${DESTINATION_DIR}" -nopause'
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; If you need nothing swapped except the log and config dir (which is a common case)
 ; you can use this macro.
 ; Makes a .mer file, calls TokenSwap.
