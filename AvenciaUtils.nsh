@@ -167,6 +167,26 @@ FunctionEnd
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; This macro ensures that the value in VALUE does not end with the string END_WITH.
+; If VALUE is "Test\" and END_WITH is "\" then this will change VALUE to "Test".
+; On the other hand, if VALUE was "Test2", it would be unchanged.
+!MACRO EnsureEndsWithout VALUE END_WITH
+  Push $R0
+  Push $R1
+  Push $R2
+
+  StrLen $R0 ${END_WITH} ; how long is the ending string
+  IntOp $R1 0 - $R0   ; how far to offset back from the end of the string
+  StrCpy $R2 ${VALUE} $R0 $R1 ;take N chars starting N from the end of VALUE put in R2
+  StrCmp $R2 ${END_WITH} 0 +2 ;if the last N chars != END_WITH, good.
+    StrCpy ${VALUE} "${VALUE}" "$R1"; otherwise, chop off END_WITH length chars
+
+  Pop $R2
+  Pop $R1
+  Pop $R0
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; This macro ensures that the file/directory "PATH" allows "USER" to have
 ; "PERMISSION.
 ; PATH: The file or directory, a trailing slash is optional for directories.

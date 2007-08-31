@@ -6,6 +6,26 @@
 
 
 ;------------------------------------------------------------------------------
+; Creates the windows service.  Pops up a message box asking the user if they
+; would like to start the service now.
+;
+; SVC_NAME - The unique name of the service.
+; SVC_EXE - The executable the service will run.
+; SVC_DISPLAY - The user-friendly display name for the service.
+!MACRO CreateAndMaybeStartService SVC_NAME SVC_EXE SVC_DISPLAY
+  DetailPrint "Creating service ${SVC_NAME}..."
+  nsExec::ExecToLog '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
+
+  MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
+      "Do you want to start the ${SVC_DISPLAY} service now?" \
+      IDYES start IDNO dont_start
+  start:
+    DetailPrint "Starting service ${SVC_NAME}..."
+    nsExec::ExecToLog '"sc.exe" start ${SVC_NAME}'
+  dont_start:
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; Creates, merges the config files (if necessary / possible), and starts (if the config merge worked)
 ; the windows service.
 ; SVC_NAME - The unique name of the service.
