@@ -83,7 +83,12 @@
   Section "Web_${DISPLAY_NAME}"
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
+    File /nonfatal /r ${SOURCE}\*.htm
     File /nonfatal /r ${SOURCE}\*.xml
+    SetOutPath ${DEST_REAL}\images
+    File /nonfatal ${SOURCE}\images\*
+    SetOutPath ${DEST_REAL}\styles
+    File /nonfatal ${SOURCE}\styles\*
     SetOutPath ${DEST_REAL}\xsd
     File /nonfatal ${SOURCE}\xsd\* ; may not be any xsd if this isn't a web service.
     SetOutPath ${DEST_REAL}\bin
