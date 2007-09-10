@@ -352,6 +352,25 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; Displays a full-width label.
+; It creates a label with a width of 80 and moves AV_EASY_X over 80 so the next
+; control will be next to the label.
+;
+; LABEL_TEXT - The text for the label
+; HEIGHT     - How tall to make the label (8 per line + 2 for overhead)
+!MACRO EasyCustomLineLabel LABEL_TEXT HEIGHT
+    ; Create the label.
+    ${NSD_CreateLabel} ${AV_EASY_X}u ${AV_EASY_Y}u 300u ${HEIGHT}u "${LABEL_TEXT}"
+    pop $0 ; don't use the label for anything, just take it off the stack.
+
+    ; reset X/Y for the next line.
+    IntOp ${AV_EASY_X} 0 + 0
+    IntOp ${AV_EASY_Y} ${AV_EASY_Y} + ${HEIGHT}
+    IntOp ${AV_EASY_Y} ${AV_EASY_Y} + 3 ; small gap before next control.
+!MACROEND
+
+
+;------------------------------------------------------------------------------
 ; This macro completes an easy custom page.  It should be called after you've
 ; added all the controls to the page.
 !MACRO EasyCustomPageEnd
