@@ -358,7 +358,7 @@
 ;
 ; LABEL_TEXT - The text for the label
 ; HEIGHT     - How tall to make the label (8 per line + 2 for overhead)
-!MACRO EasyCustomLineLabel LABEL_TEXT HEIGHT
+!MACRO EasyCustomLabel LABEL_TEXT HEIGHT
     ; Create the label.
     ${NSD_CreateLabel} ${AV_EASY_X}u ${AV_EASY_Y}u 300u ${HEIGHT}u "${LABEL_TEXT}"
     pop $0 ; don't use the label for anything, just take it off the stack.
