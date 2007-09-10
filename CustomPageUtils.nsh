@@ -305,7 +305,7 @@
     ; Try to assign the initial value.  This can't be done until the value is
     ; actually added to the box, so we try each time we add a value.
     ${IF} $${VAR_NAME} >= 0
-      SendMessage $${VAR_NAME}_CONTROL ${LB_SETCURSEL} 1 0 $0
+      SendMessage $${VAR_NAME}_CONTROL ${LB_SETCURSEL} $${VAR_NAME} 0 $0
     ${ENDIF}
 !MACROEND
 
