@@ -50,4 +50,22 @@
   StrCpy $TEMPLATES_DIR "${DEFAULT_TEMPLATES_DIR}"
 !MACROEND
 
+;--------------------------------------------------------------------------------------
+; Prompts the user for the machine name.
+;
+; ON_CHOOSE_FUNC - The function to call after the user selects the machine name.  May be "".
+!MACRO LocalhostNamePage ON_CHOOSE_FUNC
+  !INSERTMACRO CreateEasyCustomTextVar "LOCALHOST_NAME" ""
+  !INSERTMACRO EasyCustomPageWithPostBegin "LocalhostName" "Computer Name" "Please enter the name (or IP) of the local machine?" "${ON_CHOOSE_FUNC}"
+    !INSERTMACRO EasyCustomTextBox "LOCALHOST_NAME" "Name or IP:"
+  !INSERTMACRO EasyCustomPageEnd
+!MACROEND
+
+;--------------------------------------------------------------------------------------
+; Guesses the local host name based on the registry value.
+; This should be called from the installer's .onInit function.
+!MACRO InitLocalhostName
+  ReadRegStr $LOCALHOST_NAME HKLM "SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+!MACROEND
+
 !ENDIF ;STANDARD_QUESTIONS_IMPORT

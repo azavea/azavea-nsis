@@ -26,6 +26,50 @@
   FileClose ${FILE_HANDLE}
 !MACROEND
 
+;--------------------------------------------------------------------------------------
+; Includes the merginator exe/dll files
+;
+; WHERE - The folder to put the merginator files in, will be saved as ${MERGINATOR_DIR}
+!MACRO IncludeMerginator WHERE
+  !DEFINE MERGINATOR_DIR "${WHERE}"
+  File externals\Avencia.Tools.Merginator\*.exe
+  File externals\Avencia.Tools.Merginator\*.dll
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Constructs a list of input merge files for passing to Merginate's INPUT_MERS
+; parameter.
+; FILE_LIST   - A variable holding the current list of merge files, variable's value
+;               should be "" if this is the first one.
+; MERGE_FILE  - The merge file (including path if necessary) to add to the list.
+;               Merge files are used in order, so values in a later one will override
+;               values in earlier ones.  This may be "", in which case this is a
+;               no-op (the idea being if there was conditional logic for setting the
+;               $SOME_MERGE_FILE var, you don't have to check if it's been set before
+;               calling this).
+!MACRO AppendMergeFile FILE_LIST MERGE_FILE
+  ${If} ${MERGE_FILE} != ""
+    StrCpy ${FILE_LIST} '${FILE_LIST} -mi "${MERGE_FILE}"'
+  ${ENDIF}
+!MACROEND
+
+;--------------------------------------------------------------------------------------
+; Runs the merginator with the list of merge files
+;
+; OUTPUT_MER      - The output merge file, which will be written with any user values.
+; INPUT_MERS      - A list of input merge files, created using the AppendMergeFile macro.
+;                   May be "" if there are none.
+; TEMPL_DIR       - The directory containing template files.
+; DEST_DIR        - The output directory for tokenized template files.
+!MACRO Merginate OUTPUT_MER INPUT_MERS TEMPL_DIR DEST_DIR
+  Push $0
+  ; Run the Merginator
+  StrCpy $0 '"${MERGINATOR_DIR}\Avencia.Tools.Merginator.UI.exe" ${INPUT_MERS} -mo "${OUTPUT_MER}" -t "${TEMPL_DIR}" -d "${DEST_DIR}" -c'
+  DetailPrint "Executing the Merginator: $0"
+  nsExec::ExecToLog '$0'
+  Pop $0
+!MACROEND
+
 ;------------------------------------------------------------------------------
 ; Executes tokenswap.  Tokenswap's exe must be TOKENSWAP_LOCATION
 !MACRO TokenSwap TEMPLATE_FILE MERGE_FILE DESTINATION_DIR TOKENSWAP_LOCATION
