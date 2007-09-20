@@ -32,6 +32,7 @@
 ; WHERE - The folder to put the merginator files in, will be saved as ${MERGINATOR_DIR}
 !MACRO IncludeMerginator WHERE
   !DEFINE MERGINATOR_DIR "${WHERE}"
+  SetOutPath ${MERGINATOR_DIR}
   File externals\Avencia.Tools.Merginator\*.exe
   File externals\Avencia.Tools.Merginator\*.dll
 !MACROEND
