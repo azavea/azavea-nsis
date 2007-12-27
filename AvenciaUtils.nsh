@@ -203,8 +203,8 @@ FunctionEnd
   StrCmp $R0 "\" 0 +2 ;if the last char = \, need to truncate.
     StrCpy $R1 $R1 -1 ; truncate
 
-  DetailPrint 'Setting permissions: "cacls.exe" "$R1" /T /E /G ${USER}:${PERMISSION}'
-  nsExec::ExecToLog '"cacls.exe" "$R1" /T /E /G ${USER}:${PERMISSION}'
+  DetailPrint 'Setting permissions: "cacls.exe" "$R1" /T /E /G "${USER}":${PERMISSION}'
+  nsExec::ExecToLog '"cacls.exe" "$R1" /T /E /G "${USER}":${PERMISSION}'
   Pop $R1
   Pop $R0
 !MACROEND
