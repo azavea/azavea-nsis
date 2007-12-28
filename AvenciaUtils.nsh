@@ -142,7 +142,7 @@ FunctionEnd
   Section "Log Files"
     SetOutPath ${LOG_DIR}
     ; Let everyone write log files, since the IIS user will need to write them.
-    !INSERTMACRO SetPermissions ${LOG_DIR} "Everyone" "W"
+    !INSERTMACRO SetPermissions "${LOG_DIR}" "Everyone" "W"
   SectionEnd
 !MACROEND
 
