@@ -113,27 +113,11 @@
     ; Move the web.config file from wherever it was installed and tokenswapped to the web app folder
     Rename ${WEB_CONFIG} ${DEST_REAL}\Web.config
 
-    ; Create the virtual directory
-    StrCpy $CVDIR_VIRTUAL_NAME "${DEST_VIRT}"
-    StrCpy $CVDIR_REAL_PATH "${DEST_REAL}"
-    StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
-    StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
-    Call CreateVDir
-    !INSERTMACRO SetPermissions "${DEST_REAL}" "ASPNET" "R"
-    !INSERTMACRO SetPermissions "${DEST_REAL}" "NETWORK SERVICE" "R"
-    ; This should give "IUSR_<name>" read permissions, but I haven't figured out
-    ; how to get that name yet.  It is "the machine name", but it's ACTUALLY the
-    ; machine name of the machine the image was taken off of, so for example on
-    ; GIS-KARA it is actually IUSR_BERING.  Unfortunately cacls will not accept 
-    ; the "pretty" user name which is always "Internet Guest Account".
-    ; !INSERTMACRO SetPermissions "${DEST_REAL}" "IUSR_something" "R"
+    !INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
   SectionEnd
 
   Section "un.Web_${DISPLAY_NAME}"
-    ; Remove the real directory
-    StrCpy $DVDIR_VIRTUAL_NAME "${DEST_VIRT}"
-    StrCpy $DVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
-    Call un.DeleteVDir
+    !INSERTMACRO DeleteVirtualDir "${DEST_VIRT}" "${DISPLAY_NAME}"
 
     ; Remove the real directory
     RmDir /r /rebootok "${DEST_REAL}"

@@ -2,6 +2,43 @@
 !IFNDEF VIRTUAL_DIR_IMPORT
 !DEFINE VIRTUAL_DIR_IMPORT "yup"
 
+;------------------------------------------------------------------------------
+; This macro is easier than calling the function, plus it handles the permissions
+; (well, almost).
+; 
+; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC  - The default document, such as "default.asmx".
+!MACRO CreateVirtualDir DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC
+  ; Create the virtual directory
+  StrCpy $CVDIR_VIRTUAL_NAME "${DEST_VIRT}"
+  StrCpy $CVDIR_REAL_PATH "${DEST_REAL}"
+  StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
+  StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
+  Call CreateVDir
+  !INSERTMACRO SetPermissions "${DEST_REAL}" "ASPNET" "R"
+  !INSERTMACRO SetPermissions "${DEST_REAL}" "NETWORK SERVICE" "R"
+  ; This should give "IUSR_<name>" read permissions, but I haven't figured out
+  ; how to get that name yet.  It is "the machine name", but it's ACTUALLY the
+  ; machine name of the machine the image was taken off of, so for example on
+  ; GIS-KARA it is actually IUSR_BERING.  Unfortunately cacls will not accept 
+  ; the "pretty" user name which is always "Internet Guest Account".
+  ; !INSERTMACRO SetPermissions "${DEST_REAL}" "IUSR_something" "R"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; This macro is easier than calling the function
+; 
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+!MACRO DeleteVirtualDir DEST_VIRT DISPLAY_NAME
+  ; Remove the virtual directory
+  StrCpy $DVDIR_VIRTUAL_NAME "${DEST_VIRT}"
+  StrCpy $DVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
+  Call un.DeleteVDir
+!MACROEND
+
 ;--------------------------------
 ; CreateVDir Function
 Var CVDIR_VIRTUAL_NAME
