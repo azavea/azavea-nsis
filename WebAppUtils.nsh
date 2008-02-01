@@ -53,13 +53,14 @@
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm
     File /nonfatal /r ${SOURCE}\*.xml
-    File /nonfatal /r ${SOURCE}\*.js
     File /nonfatal /r ${SOURCE}\*.sitemap
     File /nonfatal /r ${SOURCE}\*.master
     SetOutPath ${DEST_REAL}\images
     File /nonfatal ${SOURCE}\images\*
     SetOutPath ${DEST_REAL}\styles
     File /nonfatal ${SOURCE}\styles\*
+    SetOutPath ${DEST_REAL}\js
+    File /nonfatal ${SOURCE}\js\*
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
