@@ -29,7 +29,7 @@
     ; Copy all files except .pdb debug files and web.config (because the web.config in the
     ; development directory will be the one with development values, we want to use the one
     ; passed in as WEB_CONFIG).
-    File /r /x *web.config /x *.pdb ${SOURCE}\*
+    File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
   !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}"
 !MACROEND
