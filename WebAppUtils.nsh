@@ -121,7 +121,7 @@
     !INSERTMACRO DeleteVirtualDir "${DEST_VIRT}" "${DISPLAY_NAME}"
 
     ; Remove the real directory
-    RmDir /r /rebootok "${DEST_REAL}"
+    RmDir /r "${DEST_REAL}"
   SectionEnd
 !MACROEND
 !ENDIF ;WEBAPP_UTILS_IMPORT
