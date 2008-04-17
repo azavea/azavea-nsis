@@ -2,6 +2,10 @@
 !IFNDEF VIRTUAL_DIR_IMPORT
 !DEFINE VIRTUAL_DIR_IMPORT "yup"
 
+; Includes this for doing the virtual directory creation/deletion.
+!INCLUDE "AvenciaUtils.nsh"
+
+
 ;------------------------------------------------------------------------------
 ; This macro is easier than calling the function, plus it handles the permissions
 ; (well, almost).
@@ -19,12 +23,9 @@
   Call CreateVDir
   !INSERTMACRO SetPermissions "${DEST_REAL}" "ASPNET" "R"
   !INSERTMACRO SetPermissions "${DEST_REAL}" "NETWORK SERVICE" "R"
-  ; This should give "IUSR_<name>" read permissions, but I haven't figured out
-  ; how to get that name yet.  It is "the machine name", but it's ACTUALLY the
-  ; machine name of the machine the image was taken off of, so for example on
-  ; GIS-KARA it is actually IUSR_BERING.  Unfortunately cacls will not accept 
-  ; the "pretty" user name which is always "Internet Guest Account".
-  ; !INSERTMACRO SetPermissions "${DEST_REAL}" "IUSR_something" "R"
+  Call GetIUSRAccount
+  DetailPrint "IUSR Account = $IUSR_ACCT_USERNAME"
+  !INSERTMACRO SetPermissions "${DEST_REAL}" "$IUSR_ACCT_USERNAME" "R"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -120,6 +121,61 @@ Abort "Failed to create IIS Virtual Directory"
 CreateVDirOK:
 DetailPrint "Successfully created IIS virtual directory"
 Delete "$TEMP\createVDir.vbs"
+FunctionEnd
+
+Var IUSR_ACCT_USERNAME
+Function GetIUSRAccount
+	DetailPrint "Creating $TEMP\iisAnon.vbs"
+	; Save the old value of $0 on the stack.
+	Push $0
+	FileOpen $0 "$TEMP\iisAnon.vbs" w
+	
+	FileWrite $0 "Function AnonymousUser()$\n"
+	FileWrite $0 "Dim FullPath, IISObj, IISObj1$\n"
+	FileWrite $0 "On Error Resume Next$\n"
+	FileWrite $0 "FullPath = $\"IIS://$\" & $\"localhost$\" & $\"/$\" & $\"W3SVC$\"$\n"
+	FileWrite $0 "Set IISObj = GetObject(FullPath)$\n"
+	FileWrite $0 "If (err <> 0) Then$\n"
+	FileWrite $0 "WScript.Echo $\"Unable to access object : $\" & $\"W3SVC$\" & $\" on computer: $\" & $\"localhost$\" & vbctrlf$\n"
+	FileWrite $0 "Exit Function$\n"
+	FileWrite $0 "Else$\n"
+	FileWrite $0 "For Each Server In IISObj$\n"
+	FileWrite $0 "If (Server.Class = $\"IIsWebServer$\") Then$\n"
+	FileWrite $0 "FullPath = $\"IIS://$\" & $\"localhost$\" & $\"/$\" & $\"W3SVC$\" & $\"/$\" & Server.Name & $\"/Root$\"$\n"
+	FileWrite $0 "Else$\n"
+	FileWrite $0 "FullPath = $\"IIS://$\" & $\"localhost$\" & $\"/$\" & $\"W3SVC$\" & $\"/$\" & Server.Name$\n"
+	FileWrite $0 "End If$\n"
+	FileWrite $0 "Set IISObj1 = GetObject(FullPath)$\n"
+	FileWrite $0 "AnonymousUser = IISObj1.AnonymousUserName$\n"
+	FileWrite $0 "Next$\n"
+	FileWrite $0 "End If$\n"
+	FileWrite $0 "Set IISObj = Nothing$\n"
+	FileWrite $0 "End Function$\n"
+
+	FileWrite $0 "Dim anonymousUserName$\n"
+	FileWrite $0 "anonymousUserName = AnonymousUser()$\n"
+	FileWrite $0 "WScript.Echo anonymousUserName"
+
+	FileClose $0
+	
+	DetailPrint "Executing $TEMP\iisAnon.vbs"
+	nsExec::ExecToStack /TIMEOUT=20000 '"$SYSDIR\cscript.exe" //Nologo "$TEMP\iisAnon.vbs"'
+	Pop $0 ; return code
+	StrCmp $0 "0" GetAnonOk
+		Pop $0
+		DetailPrint "Error $0 in iisAnon.vbs"
+		Abort "Failed to get IIS Anonymous Username"
+		Goto AnonUsrEnd
+	
+	GetAnonOk:
+		Pop $0
+		StrCpy $IUSR_ACCT_USERNAME $0
+		!INSERTMACRO EnsureEndsWithout $IUSR_ACCT_USERNAME "$\r$\n"
+
+	AnonUsrEnd:
+		; Restore the old value of $0
+		Pop $0
+		Delete "$TEMP\iisAnon.vbs"
 FunctionEnd
  
 ;--------------------------------
