@@ -232,6 +232,24 @@ FunctionEnd
   Pop $0
 !MACROEND
 
+;------------------------------------------------------------------------------
+; Sets a variable to a default value.  Also checks the command line and will
+; use the command line value over the default if a command line value is
+; provided.  Command line values are expected to be in the form /VAR_NAME=<value>.
+;
+; VAR_NAME - The NAME of the variable that will be defaulted.  In other
+;            words, if you are using a variable called $MY_VAR, you should
+;            pass the STRING "MY_VAR".
+; DEFAULT_VALUE - The default value.  This will be used if the variable has
+;                 no value on the command line.
+!MACRO InitVar VAR_NAME DEFAULT_VALUE
+  ; Check for a command line param.
+  !INSERTMACRO GetCommandOption "/${VAR_NAME}=" $${VAR_NAME}
+  ; No command line param, set it to the default value.
+  StrCmp $${VAR_NAME} "" "" +2
+    StrCpy $${VAR_NAME} "${DEFAULT_VALUE}"
+!MACROEND
+
 
 ;
 ; The following functions have been copied wholesale from the appendix in the
