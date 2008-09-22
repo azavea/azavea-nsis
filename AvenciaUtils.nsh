@@ -211,4 +211,188 @@ FunctionEnd
   Pop $R0
 !MACROEND
 
+;------------------------------------------------------------------------------
+; This macro gets the command line value of parameter PARAM_NAME and puts it
+; into DEST_VAR.  If the command is quoted ("/E Jeff Rules") we use the closing
+; quote to terminate the value, so in that example the value would be "Jeff Rules".
+; If unquoted (/E Jeff Rules) we use the first space, so the value would be "Jeff".
+; By the way, this macro doesn't handle escaped quotes.
+; PARAM_NAME: The entire parameter string to look for, I.E. "/E " or "/USER=" or
+;             "-- " or whatever.  Everything that should precede the actual value.
+; DEST_VAR: The destination variable.  Must be a variable.  The value will be ""
+;           if the parameter was not found in the param string.
+!MACRO GetCommandOption PARAM_NAME DEST_VAR
+  Push $0
+  Push $1
+  Push "${PARAM_NAME}"
+  Call GetSingleParameter
+  Pop ${DEST_VAR}
+  DetailPrint "Value of command line param ${PARAM_NAME}: '${DEST_VAR}'"
+  Pop $1
+  Pop $0
+!MACROEND
+
+
+;
+; The following functions have been copied wholesale from the appendix in the
+; NSIS manual, under the section "Useful Scripts"
+;
+
+
+;------------------------------------------------------------------------------
+; This function is intended to be called by the GetCommandOption macro.
+; Pops the param name, pushes the value.
+Function GetSingleParameter
+  Pop $0
+  Push $R0
+  Push $R1
+  Push $R2
+  Push $R3
+ 
+  ; This loads the entire parameter string from the command line
+  ; into $R0.
+  Call GetParameters
+  Pop $R0
+
+  ; R1 contains the value-terminator, either a closing " or a space.
+  StrCpy $R1 '"'
+  ; search for quoted $0
+  Push $R0
+  Push '"$0'
+  Call StrStr
+  Pop $R2
+  ; If we found it, $R2 will now contain:
+  ; '"$0=<the rest of the param string, including any remaining params>'
+  ; Otherwise it will be empty string.
+
+  ; This will remove the " off the front...  Except what if it's an empty
+  ; string?  You'd think it would break, but this is how the example did it.
+  StrCpy $R2 $R2 "" 1
+  ; Compare $R2 with "", if equal, do nothing (meaning go to the next line),
+  ; if not equal, meaning we found something, jump to foundParamString.
+  StrCmp $R2 "" "" foundParamString
+    ; Didn't find anything, try searching without a ".
+    StrCpy $R1 ' ' ; change the value-terminator.
+    ; search entire param list ($R0) for non quoted $0
+    Push $R0
+    Push '$0'
+    Call StrStr
+    Pop $R2
+	; Check if we found anything.  If $R2 is "", we didn't find anything, so
+	; just return empty string.
+    StrCmp $R2 "" done
+foundParamString:
+    ; If we're here, we found the parameter.
+    ; copy the value after $0.
+	StrLen $R3 $0
+    StrCpy $R2 $R2 "" $R3
+  ; By now $R2 will now have the value we want, plus the entire remainder
+  ; of the parameter string.  So we need to chop off everything past the
+  ; terminating charater.
+  Push $R2
+  Push $R1
+  Call StrStr
+  Pop $R1
+  ; Now $R1 has the terminating character plus everything else.  If $R1 is
+  ; empty, there wasn't anything else, so we're done.
+  StrCmp $R1 "" done
+  ; Get the length of $R1 so we can chop that much off the end of $R2.
+  StrLen $R1 $R1
+  StrCpy $R2 $R2 -$R1
+done:
+  ; Save the output into $1.
+  StrCpy $1 $R2
+  ; Restore all the working variables.
+  Pop $R3
+  Pop $R2
+  Pop $R1
+  Pop $R0
+  ; put the return value onto the stack.
+  Push $1
+FunctionEnd
+
+; GetParameters
+ ; input, none
+ ; output, top of stack (replaces, with e.g. whatever)
+ ; modifies no other variables.
+ 
+ Function GetParameters
+ 
+   Push $R0
+   Push $R1
+   Push $R2
+   Push $R3
+   
+   StrCpy $R2 1
+   StrLen $R3 $CMDLINE
+   
+   ;Check for quote or space
+   StrCpy $R0 $CMDLINE $R2
+   StrCmp $R0 '"' 0 +3
+     StrCpy $R1 '"'
+     Goto loop
+   StrCpy $R1 " "
+   
+   loop:
+     IntOp $R2 $R2 + 1
+     StrCpy $R0 $CMDLINE 1 $R2
+     StrCmp $R0 $R1 get
+     StrCmp $R2 $R3 get
+     Goto loop
+   
+   get:
+     IntOp $R2 $R2 + 1
+     StrCpy $R0 $CMDLINE 1 $R2
+     StrCmp $R0 " " get
+     StrCpy $R0 $CMDLINE "" $R2
+   
+   Pop $R3
+   Pop $R2
+   Pop $R1
+   Exch $R0
+ 
+ FunctionEnd
+
+ ; StrStr
+ ; input, top of stack = string to search for
+ ;        top of stack-1 = string to search in
+ ; output, top of stack (replaces with the portion of the string remaining)
+ ; modifies no other variables.
+ ;
+ ; Usage:
+ ;   Push "this is a long ass string"
+ ;   Push "ass"
+ ;   Call StrStr
+ ;   Pop $R0
+ ;  ($R0 at this point is "ass string")
+
+ Function StrStr
+   Exch $R1 ; st=haystack,old$R1, $R1=needle
+   Exch    ; st=old$R1,haystack
+   Exch $R2 ; st=old$R1,old$R2, $R2=haystack
+   Push $R3
+   Push $R4
+   Push $R5
+   StrLen $R3 $R1
+   StrCpy $R4 0
+   ; $R1=needle
+   ; $R2=haystack
+   ; $R3=len(needle)
+   ; $R4=cnt
+   ; $R5=tmp
+   loop:
+     StrCpy $R5 $R2 $R3 $R4
+     StrCmp $R5 $R1 done
+     StrCmp $R5 "" done
+     IntOp $R4 $R4 + 1
+     Goto loop
+ done:
+   StrCpy $R1 $R2 "" $R4
+   Pop $R5
+   Pop $R4
+   Pop $R3
+   Pop $R2
+   Exch $R1
+ FunctionEnd 
+
 !ENDIF ;AVENCIA_UTILS_IMPORT
