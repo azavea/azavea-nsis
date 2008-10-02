@@ -353,8 +353,6 @@
 
 ;------------------------------------------------------------------------------
 ; Displays a full-width label.
-; It creates a label with a width of 80 and moves AV_EASY_X over 80 so the next
-; control will be next to the label.
 ;
 ; LABEL_TEXT - The text for the label
 ; HEIGHT     - How tall to make the label (8 per line + 2 for overhead)
