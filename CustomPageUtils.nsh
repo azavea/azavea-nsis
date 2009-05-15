@@ -169,6 +169,7 @@
 ;              have been declared by calling CreateEasyCustomVar.
 ; LABEL_TEXT - The label to display to the left of the text box.
 !MACRO EasyCustomTextBox VAR_NAME LABEL_TEXT
+    Push $0
     ; Create the label.
     !INSERTMACRO EasyCustomLineLabel "${LABEL_TEXT}"
 
@@ -194,6 +195,7 @@
     ; reset X/Y for the next line.
     IntOp ${AV_EASY_X} 0 + 0
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + 15
+    Pop $0
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -211,6 +213,7 @@
 ;              have been declared by calling CreateEasyCustomVar.
 ; LABEL_TEXT - The label to display to the left of the text box.
 !MACRO EasyCustomFilePath VAR_NAME LABEL_TEXT
+    Push $0
     ; Create the label.
     !INSERTMACRO EasyCustomLineLabel "${LABEL_TEXT}"
 
@@ -239,6 +242,7 @@
     ; reset X/Y for the next line.
     IntOp ${AV_EASY_X} 0 + 0
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + 15
+    Pop $0
 !MACROEND
 ; No idea what this means, but apparently it's needed for autocomplete to work.
 !DEFINE SHACF_FILESYSTEM 1
@@ -257,6 +261,7 @@
 ; LABEL_TEXT - The label to display above the list box.
 ; HEIGHT     - How tall to make the box (8 per line + 3 for overhead)
 !MACRO EasyCustomListBox VAR_NAME LABEL_TEXT HEIGHT
+    Push $0
     ; Create the label.
     ${NSD_CreateLabel} ${AV_EASY_X}u ${AV_EASY_Y}u 300u 10u "${LABEL_TEXT}"
     pop $0 ; don't use the label for anything, just take it off the stack.
@@ -286,6 +291,7 @@
     IntOp ${AV_EASY_X} 0 + 0
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + ${HEIGHT}
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + 3 ; small gap before next control.
+    Pop $0
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -301,12 +307,14 @@
 ; LABEL_TEXT - The label to display above the list box.
 ; HEIGHT     - How tall to make the box (8 per line + 3 for overhead)
 !MACRO EasyCustomListBoxEntry VAR_NAME ENTRY
+    Push $0
     SendMessage $${VAR_NAME}_CONTROL ${LB_ADDSTRING} 0 "STR:${ENTRY}"
     ; Try to assign the initial value.  This can't be done until the value is
     ; actually added to the box, so we try each time we add a value.
     ${IF} $${VAR_NAME} >= 0
       SendMessage $${VAR_NAME}_CONTROL ${LB_SETCURSEL} $${VAR_NAME} 0 $0
     ${ENDIF}
+    Pop $0
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -322,6 +330,7 @@
 ;              have been declared by calling CreateEasyCustomCheckBoxVar.
 ; LABEL_TEXT - The label to display to the right of the check box.
 !MACRO EasyCustomCheckBox VAR_NAME LABEL_TEXT
+    Push $0
     ; Indent the checkbox slightly from the left.
     IntOp ${AV_EASY_X} ${AV_EASY_X} + 5
 
@@ -349,6 +358,7 @@
     ; reset X/Y for the next line.
     IntOp ${AV_EASY_X} 0 + 0
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + 15
+    Pop $0
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -357,6 +367,7 @@
 ; LABEL_TEXT - The text for the label
 ; HEIGHT     - How tall to make the label (8 per line + 2 for overhead)
 !MACRO EasyCustomLabel LABEL_TEXT HEIGHT
+    Push $0
     ; Create the label.
     ${NSD_CreateLabel} ${AV_EASY_X}u ${AV_EASY_Y}u 300u ${HEIGHT}u "${LABEL_TEXT}"
     pop $0 ; don't use the label for anything, just take it off the stack.
@@ -365,6 +376,7 @@
     IntOp ${AV_EASY_X} 0 + 0
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + ${HEIGHT}
     IntOp ${AV_EASY_Y} ${AV_EASY_Y} + 3 ; small gap before next control.
+    Pop $0
 !MACROEND
 
 
@@ -389,12 +401,14 @@
 ;
 ; LABEL_TEXT - The text for the label
 !MACRO EasyCustomLineLabel LABEL_TEXT
+    Push $0
     ; Create the label.
     ${NSD_CreateLabel} ${AV_EASY_X}u ${AV_EASY_Y}u 80u 10u "${LABEL_TEXT}"
     pop $0 ; don't use the label for anything, just take it off the stack.
 
     ; We're putting the next control over to the right.
     IntOp ${AV_EASY_X} ${AV_EASY_X} + 80
+    Pop $0
 !MACROEND
 
 ;------------------------------------------------------------------------------

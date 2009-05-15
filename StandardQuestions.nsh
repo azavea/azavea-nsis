@@ -13,7 +13,7 @@
 ; You can override the default locations by defining these prior to importing this
 ; nsh file.
 !IFNDEF DEFAULT_APP_DIR
-  !DEFINE DEFAULT_APP_DIR "$INSTDIR\csharp\${APP_NAME}"
+  !DEFINE DEFAULT_APP_DIR "$INSTDIR\app"
 !ENDIF
 !IFNDEF DEFAULT_CONF_DIR
   !DEFINE DEFAULT_CONF_DIR "$INSTDIR\config"

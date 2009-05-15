@@ -136,6 +136,8 @@
 ; Defines a variable, $${CUSTOM_NAME}_SELECTION, which will be one of the names added with the
 ; AddMergeFileOption macro.  The selection will be "" if "No Defaults" is selected.
 ;
+; NOTE: You probably want to use DefaultMergeSelectionPage instead of using this directly.
+;
 ; CUSTOM_NAME - A custom name that must be unique, and should be simple with no
 ;               spaces or punctuation.  It is used to define functions and things.
 ; CUSTOM_HEADER - The text in the title bar of the custom page.
@@ -258,6 +260,81 @@
   Call ${CUSTOM_NAME}_default_onChooseMergeFile
   DetailPrint "Done Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
 !MACROEND
+
+;--------------------------------------------------------------------------------------
+; Prompts the user for which set of values to use (I.E. which merge file to use).
+;
+; Examples of how to call this:
+;   !INSERTMACRO DefaultMergeSelectionPage "DOT;DOT_Test;Avencia;Avencia_Test" ""
+;   !INSERTMACRO DefaultMergeSelectionPage "DOT;DOT_Test;Avencia;Avencia_Test" "someFunction"
+;
+; OPTION_LIST    - A semicolon-separated string listing the options.
+; ON_CHOOSE_FUNC - The function to call after the user selects where they're installing.
+!MACRO DefaultMergeSelectionPage OPTION_LIST ON_CHOOSE_FUNC
+  ; Ask which defaults to use, DOT or Avencia
+  !INSERTMACRO MergeFileSelectionPageBegin "InstallLocation" "Default Values" "Which default values should we use?" "Select an install location:" "${ON_CHOOSE_FUNC}"
+    ; The OPTION_LIST variable has a semicolon-separated list of names, so we need
+    ; to iterate over them inserting each one.
+    Push $0    ; Has the current index within the string.
+    Push $1    ; Has the current option name.
+    Push $2    ; The current character we're looking at while looking for semicolons.
+    Push $3    ; The total length of the option list.
+    Push $5    ; The index of the beginning of the current option.
+    Push $6    ; The length of the current option.
+
+    StrLen $3 "${OPTION_LIST}" ; Get the length of the entire list string.
+    IntOp $0 0 + 0    ; Initialize to 0. (start at the beginning of the string)
+    IntOp $5 0 + 0    ; Assume the first option starts at char 0.
+    IntOp $6 0 + 0    ; Start out assuming length is zero.
+
+    find_end_of_option_name:
+      ; If we hit the end of the string, we're done.
+      IntCmp $0 $3 found_end_of_option_name 0 found_end_of_option_name
+        ; Check for a semicolon.
+        StrCpy $2 "${OPTION_LIST}" 1 $0
+        ; If it's a semicolon, we're done.
+        StrCmp $2 ";" found_end_of_option_name 0
+          IntOp $6 $6 + 1     ; Not a semicolon, increase the length by one.
+          IntOp $0 $0 + 1     ; Also we want to move to the next index.
+        Goto find_end_of_option_name    ; Loop again.
+
+    found_end_of_option_name:
+      IntCmp $6 0 decide_if_any_left decide_if_any_left 0
+      ; If we're here, it means we have an actual name, it starts at index
+      ; $5 and is $6 characters long.  So copy it into $1.
+      StrCpy $1 "${OPTION_LIST}" $6 $5
+      DetailPrint "Adding merge file option: $1";
+      !INSERTMACRO AddMergeFileOption "InstallLocation" "$1"
+
+    decide_if_any_left: 
+      ; See if we've hit the end of the string yet.  If so, we're done.  If not, loop again.
+      IntCmp $0 $3 default_merge_selection_done 0 default_merge_selection_done
+        ; Bump the counter by 1 to skip over the semicolon.
+        IntOp $0 $0 + 1
+        ; Before we loop, we need to set $5 to the current position and reset $6.
+        IntOp $5 $0 + 0
+        IntOp $6 0 + 0
+        Goto find_end_of_option_name
+
+    default_merge_selection_done:
+    Pop $6
+    Pop $5
+    Pop $3
+    Pop $2
+    Pop $1
+    Pop $0
+  !INSERTMACRO MergeFileSelectionPageEnd "InstallLocation" "false"
+!MACROEND
+
+;--------------------------------------------------------------------------------------
+; Initializes to the given customer (one of the CUST_XXX numbers).
+;
+; WHICH_CUSTOMER - One of the values from the semicolon-separated list you passed to 
+;                  DefaultMergeSelectionPage
+!MACRO InitCustomerValue WHICH_CUSTOMER
+  !INSERTMACRO InitMergeFileValue "InstallLocation" ${WHICH_CUSTOMER}
+!MACROEND
+
 
 ;--------------------------------------------------------------------------------------
 ; Appends 0, 1, or 2 merge file names to the MERGE_FILE_LIST variable.
