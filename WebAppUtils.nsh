@@ -116,10 +116,14 @@
     Rename ${WEB_CONFIG} ${DEST_REAL}\Web.config
 
     !INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
+    !INSERTMACRO SaveUninstallValue "WebAppURL" "${DEST_VIRT}"
   SectionEnd
 
   Section "un.Web_${DISPLAY_NAME}"
-    !INSERTMACRO DeleteVirtualDir "${DEST_VIRT}" "${DISPLAY_NAME}"
+    Push $1
+    !INSERTMACRO GetUninstallValue "WebAppURL" $1
+    !INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+    Pop $1
 
     ; Remove the real directory
     RmDir /r "${DEST_REAL}"
