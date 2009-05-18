@@ -6,26 +6,38 @@
 
 ;------------------------------------------------------------------------------
 ; The first half of what you need to install an executable and its associated stuff.
-; Uses all the default pages, locations, etc.
+; Uses all the default pages, locations, etc.  Requires "${APP_NAME}" to be defined
+; as a name for the app with no spaces.
 ;
-; USAGE: Call this, then list all the config files you need, then call
-;        EndInstallExe.  Example:
+; USAGE: Call the series of SimpleInstall macros as follows:
 ;
-;   BeginInstallExe "Test Thing To Install" "TestThing" "Avencia;Avencia_Test"
+;   !INCLUDE "SimplerInstallers.nsh"
+;
+;   ${BeginSimpleInstall} "Test Thing To Install" "TestThing" "Avencia;Avencia_Test"
+;     <some other pages>
+;   ${SimpleInstall_PagesToInit}
 ;     File ..\config\templates\TestThing.config
 ;     File ..\config\templates\TestThing_App.config
-;   EndInstallExe "..\csharp\TestThing\bin\Release" "TestThing_App.config" "TestThing.exe.config"
+;   ${SimpleInstall_InitToConfig}
+;     StrCpy $SOME_VAR "something"
+;   ${SimpleInstall_ConfigToTokens}
+;     ${WriteToken}
+;   ${SimpleInstall_TokensToSections} ""
+;   ${NormalApplication} "..\csharp\TestThing\bin\Release" "TestThing_App.config" "TestThing.exe.config"
+;   Section "Some Other Section"
+;     ...
+;   SectionEnd
+;
+;   ${AvStandardUninstaller}
 ;
 ; NICE_NAME - The pretty name to display to the user.
-; SHORT_NAME - The name with no spaces to use for things like the install dir.
 ; DEFAULT_MERGE_OPTIONS - The semicolon-separated list of merge file names
 ;                         for the user to choose between, I.E. "Avencia;DOT;DOT_Test"
-!MACRO BeginInstallExe NICE_NAME SHORT_NAME DEFAULT_MERGE_OPTIONS
+!MACRO SimpleInstall_ToPages NICE_NAME DEFAULT_MERGE_OPTIONS
   Name "${NICE_NAME}"
-  OutFile "${SHORT_NAME}Setup.exe"
-  InstallDir "C:\projects\${SHORT_NAME}"
+  OutFile "${APP_NAME}Setup.exe"
+  InstallDir "C:\projects\${APP_NAME}"
 
-  !DEFINE APP_NAME "${SHORT_NAME}"
   !DEFINE APP_MAJOR_VERSION "0"
   !DEFINE APP_MINOR_VERSION "1"
 
@@ -37,10 +49,16 @@
   !INSERTMACRO MUI_PAGE_WELCOME
   ; Ask the user to choose an install directory.
   !INSERTMACRO MUI_PAGE_DIRECTORY
-  ; Page to show while installing the files.
-  !INSERTMACRO MUI_PAGE_INSTFILES
   ; Ask where we're installing.
   !INSERTMACRO DefaultMergeSelectionPage "${DEFAULT_MERGE_OPTIONS}" ""
+!MACROEND
+
+;------------------------------------------------------------------------------
+; The next macro in the "SimpleInstall" series.
+; See the description of BeginSimpleInstall for example usage.
+!MACRO SimpleInstall_PagesToInit
+  ; Page to show while installing the files.
+  !INSERTMACRO MUI_PAGE_INSTFILES
 
   ; On uninstall, show the progress.
   !INSERTMACRO MUI_UNPAGE_CONFIRM
@@ -54,6 +72,12 @@
 
   Function .onInit
     Call StartupChecks
+!MACROEND
+
+;------------------------------------------------------------------------------
+; The next macro in the "SimpleInstall" series.
+; See the description of BeginSimpleInstall for example usage.
+!MACRO SimpleInstall_InitToConfig
   FunctionEnd
 
   Function .onVerifyInstDir
@@ -73,19 +97,18 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
-; Finished up the exe installer.
-; See the description of BeginInstallExe for example usage.
-;
-; SOURCE_DIR - The path to the dlls/exes/etc where we're getting them from.
-; APP_CONFIG_IS - The current name of the app config file in the templates dir (Blah_app.config)
-; APP_CONFIG_SHOULD_BE - What it should be named (Blah.exe.config)
-!MACRO EndInstallExe SOURCE_DIR APP_CONFIG_IS APP_CONFIG_SHOULD_BE
+; The next macro in the "SimpleInstall" series.
+; See the description of BeginSimpleInstall for example usage.
+!MACRO SimpleInstall_ConfigToTokens
     ;merge files
     !DEFINE MERGE_DIR "$CONFIG_DIR\merge"
     ; Create the dir.
     SetOutPath "${MERGE_DIR}"
+    ; Include the defaults.
+    File "defaults\*.mer"
+
     ; Substitute values in the config file.
-    !INSERTMACRO OpenMergeFile "${MERGE_DIR}\installer.mer" $0
+    !INSERTMACRO OpenMergeFile "${MERGE_DIR}\install.mer" $0
 
     DetailPrint "Using log directory: $LOG_DIR"
     !INSERTMACRO WriteToken $0 "logdir" "$LOG_DIR"
@@ -98,11 +121,20 @@
     DetailPrint "Using bin directory: $APPLICATION_DIR"
     !INSERTMACRO WriteToken $0 "exedir" "$APPLICATION_DIR"
     !INSERTMACRO WriteToken $0 "exe_dir" "$APPLICATION_DIR"
+!MACROEND
 
+;------------------------------------------------------------------------------
+; The next macro in the "SimpleInstall" series.
+; See the description of BeginSimpleInstall for example usage.
+;
+; BASIC_DEFAULT_MERGE_FILE - A merge file to use before all others.  May be "" if none.
+!MACRO SimpleInstall_TokensToSections BASIC_DEFAULT_MERGE_FILE
     !INSERTMACRO CloseMergeFile $0
 
     StrCpy $1 ""
-    !INSERTMACRO AppendMergeFile $1 "${MERGE_DIR}\installer.mer"
+    !INSERTMACRO AppendMergeFile $1 "${BASIC_DEFAULT_MERGE_FILE}"
+    !INSERTMACRO AppendDefaultSelectedMergeFileName $1
+    !INSERTMACRO AppendMergeFile $1 "${MERGE_DIR}\install.mer"
 
     ; Run the Merginator
     !INSERTMACRO Merginate "$CONFIG_DIR\installed.mer" "$1" "$TEMPLATES_DIR" "$CONFIG_DIR"
@@ -110,7 +142,16 @@
     ; Let everyone read config files, since the windows service user will need to read them.
     !INSERTMACRO SetPermissions "$CONFIG_DIR" "Everyone" "R"
   SectionEnd
+!MACROEND
 
+;------------------------------------------------------------------------------
+; Finished up the exe installer.
+; See the description of BeginInstallExe for example usage.
+;
+; SOURCE_DIR - The path to the dlls/exes/etc where we're getting them from.
+; APP_CONFIG_IS - The current name of the app config file in the templates dir (Blah_app.config)
+; APP_CONFIG_SHOULD_BE - What it should be named (Blah.exe.config)
+!MACRO NormalApplication SOURCE_DIR APP_CONFIG_IS APP_CONFIG_SHOULD_BE
   Section "Application"
     SetOutPath $APPLICATION_DIR
     File ${SOURCE_DIR}\*.exe
@@ -120,8 +161,6 @@
     DetailPrint "Renaming $CONFIG_DIR\${APP_CONFIG_IS} to $APPLICATION_DIR\${APP_CONFIG_SHOULD_BE}"
     Rename "$CONFIG_DIR\${APP_CONFIG_IS}" "$APPLICATION_DIR\${APP_CONFIG_SHOULD_BE}"
   SectionEnd
-
-  !INSERTMACRO AvStandardUninstaller
 !MACROEND
 
 !ENDIF ;SIMPLE_INSTALLERS_IMPORT

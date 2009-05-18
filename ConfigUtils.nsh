@@ -50,7 +50,7 @@
 ;               $SOME_MERGE_FILE var, you don't have to check if it's been set before
 ;               calling this).
 !MACRO AppendMergeFile FILE_LIST MERGE_FILE
-  ${If} ${MERGE_FILE} != ""
+  ${If} "${MERGE_FILE}" != ""
     StrCpy ${FILE_LIST} '${FILE_LIST} -mi "${MERGE_FILE}"'
   ${ENDIF}
 !MACROEND
@@ -335,6 +335,15 @@
   !INSERTMACRO InitMergeFileValue "InstallLocation" ${WHICH_CUSTOMER}
 !MACROEND
 
+;--------------------------------------------------------------------------------------
+; Initializes to the given customer (one of the CUST_XXX numbers).
+;
+; MERGE_FILE_LIST - The variable containing the list of merge files (constructed
+;                   using AppendMergeFile).
+!MACRO AppendDefaultSelectedMergeFileName MERGE_FILE_LIST
+  !INSERTMACRO AppendSelectedMergeFileNames "InstallLocation" ${MERGE_FILE_LIST}
+!MACROEND
+
 
 ;--------------------------------------------------------------------------------------
 ; Appends 0, 1, or 2 merge file names to the MERGE_FILE_LIST variable.
@@ -342,6 +351,8 @@
 ; If a <something>_Test name was selected, both <something>.mer and <something>_Test.mer
 ; are appended.
 ; Otherwise, just <something>.mer is appended.
+;
+; You don't need to use this if you use AppendSelectedDefaultMergeFileName
 ;
 ; CUSTOM_NAME     - The same name you passed to MergeFileSelectionPageBegin
 ; MERGE_FILE_LIST - The variable containing the list of merge files (constructed
