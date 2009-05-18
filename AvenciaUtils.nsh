@@ -58,8 +58,34 @@
   WriteUninstaller "${UNINSTALLER_FILE}"
 !MACROEND
 
+
+
+;------------------------------------------------------------------------------
+; Retrieves the install location from the registry (so you must have called
+; "SaveStandardUninstallInfo"), blows away the install dir, and then
+; removes the uninstall info from the registry.
+;
+; NOTE: If you have any custom uninstall stuff, it should go BEFORE this
+;       macro call in your .NSI file.
+!MACRO AvStandardUninstaller
+; Make sure the load variables first before the rest of the uninstall happens.
+  Function un.onInit
+    !INSERTMACRO GetUninstallValue "InstallLocation" $INSTDIR
+  FunctionEnd
+
+  Section "un.EntireApp"
+    DetailPrint "Removing installed dir $INSTDIR"
+    RmDir /r $INSTDIR
+  SectionEnd
+
+  Function un.onUninstSuccess
+    !INSERTMACRO RemoveUninstallInfo
+  FunctionEnd
+!MACROEND
+
 ;------------------------------------------------------------------------------
 ; Removes the icon, registry keys, and uninstaller file itself.
+; Not necessary to call this if you use StandardUninstallSection.
 !MACRO RemoveUninstallInfo
   Push $R0
 

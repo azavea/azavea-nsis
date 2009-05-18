@@ -26,14 +26,25 @@
 !ENDIF
 
 ;------------------------------------------------------------------------------
+; Just declares the four standard subdir variables:
+; APPLICATION_DIR, CONFIG_DIR, LOG_DIR, and TEMPLATES_DIR.
+; 
+; Note: Use this macro INSTEAD OF AvStandardQuestionsPage if you
+;       want to use the other standard macros but don't want to
+;       bother to ask the user where the subdirectories go.
+!MACRO AvStandardSubdirVariables
+  Var APPLICATION_DIR
+  Var CONFIG_DIR
+  Var LOG_DIR
+  Var TEMPLATES_DIR
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; Inserts the "standard questions" page.  This page prompts for an application
 ; (csharp) dir, a config dir, and a log dir.  This also defines the following
 ; variables: APPLICATION_DIR, CONFIG_DIR, LOG_DIR, and TEMPLATES_DIR.
 !MACRO AvStandardQuestionsPage
-  !INSERTMACRO CreateEasyCustomDirPathVar "APPLICATION_DIR"
-  !INSERTMACRO CreateEasyCustomDirPathVar "CONFIG_DIR"
-  !INSERTMACRO CreateEasyCustomDirPathVar "LOG_DIR"
-  Var TEMPLATES_DIR
+  !INSERTMACRO AvStandardSubdirVariables
 
   !INSERTMACRO EasyCustomPageBegin "StandardQuestions" "Additional File Paths" "Please choose locations for these files."
     !INSERTMACRO EasyCustomFilePath "APPLICATION_DIR" "Application file location:"
@@ -66,6 +77,20 @@
 ; This should be called from the installer's .onInit function.
 !MACRO InitLocalhostName
   ReadRegStr $LOCALHOST_NAME HKLM "SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+!MACROEND
+
+
+;--------------------------------------------------------------------------------------
+; Standard page to ask for the name of the virtual directory.
+; Declares a variable "APP_URL" that will contain the virtual
+; directory name chosen by the user.
+; If you set that variable in .onInit, that value will be used
+; as the default when this page is shown.
+!MACRO AvStandardVirtualDirectoryPage
+  !INSERTMACRO CreateEasyCustomURLVar "APP_URL"
+  !INSERTMACRO EasyCustomPageBegin "WebAppURL" "Virtual Directory" "Please choose the virtual directory (http://localhost/virtual_directory) for this application."
+    !INSERTMACRO EasyCustomTextBox "APP_URL" "Web Application:"
+  !INSERTMACRO EasyCustomPageEnd
 !MACROEND
 
 !ENDIF ;STANDARD_QUESTIONS_IMPORT
