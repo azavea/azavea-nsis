@@ -138,13 +138,16 @@
 ; The next macro in the "SimpleInstall" series.
 ; See the description of BeginSimpleInstall for example usage.
 ;
-; BASIC_DEFAULT_MERGE_FILE - A merge file to use before all others.  May be "" if none.
-!MACRO SimpleInstall_TokensToSections BASIC_DEFAULT_MERGE_FILE
+; FIRST_MERGE_FILE - A merge file to use before all others.  May be "" if none.
+; LAST_MERGE_FILE - A merge file to use after all others (except the installer file).  May be "" if none.
+;                   The merge file written by the installer always trumps all other merge files.
+!MACRO SimpleInstall_TokensToSections FIRST_MERGE_FILE LAST_MERGE_FILE
     !INSERTMACRO CloseMergeFile $0
 
     StrCpy $1 ""
-    !INSERTMACRO AppendMergeFile $1 "${BASIC_DEFAULT_MERGE_FILE}"
+    !INSERTMACRO AppendMergeFile $1 "${FIRST_MERGE_FILE}"
     !INSERTMACRO AppendDefaultSelectedMergeFileName $1
+    !INSERTMACRO AppendMergeFile $1 "${LAST_MERGE_FILE}"
     !INSERTMACRO AppendMergeFile $1 "${MERGE_DIR}\install.mer"
 
     ; Run the Merginator
