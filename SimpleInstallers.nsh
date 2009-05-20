@@ -34,9 +34,20 @@
 ; DEFAULT_MERGE_OPTIONS - The semicolon-separated list of merge file names
 ;                         for the user to choose between, I.E. "Avencia;DOT;DOT_Test"
 !MACRO SimpleInstall_ToPages NICE_NAME DEFAULT_MERGE_OPTIONS
+  !INSERTMACRO SimpleInstall_ToPages_WithDetails "${NICE_NAME}" "${DEFAULT_MERGE_OPTIONS}" 0 1 "" "C:\projects\${APP_NAME}"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; This version takes additional details if you feel like specifying them.
+; MAJOR_VER - Major version, I.E. the "2" in "2.0"
+; MINOR_VER - Minor version, I.E. the "0" in "2.0"
+; ON_MERGE_SELECTION - The function to call after the user chooses a merge file.
+;                      May be "".
+; DEFAULT_INST_DIR - What dir to default to install to.
+!MACRO SimpleInstall_ToPages_WithDetails NICE_NAME DEFAULT_MERGE_OPTIONS MAJOR_VER MINOR_VER ON_MERGE_SELECTION DEFAULT_INST_DIR
   Name "${NICE_NAME}"
   OutFile "${APP_NAME}Setup.exe"
-  InstallDir "C:\projects\${APP_NAME}"
+  InstallDir "${DEFAULT_INST_DIR}"
 
   !DEFINE APP_MAJOR_VERSION "0"
   !DEFINE APP_MINOR_VERSION "1"
@@ -50,7 +61,7 @@
   ; Ask the user to choose an install directory.
   !INSERTMACRO MUI_PAGE_DIRECTORY
   ; Ask where we're installing.
-  !INSERTMACRO DefaultMergeSelectionPage "${DEFAULT_MERGE_OPTIONS}" ""
+  !INSERTMACRO DefaultMergeSelectionPage "${DEFAULT_MERGE_OPTIONS}" "${ON_MERGE_SELECTION}"
 !MACROEND
 
 ;------------------------------------------------------------------------------
