@@ -44,7 +44,10 @@
 ; (csharp) dir, a config dir, and a log dir.  This also defines the following
 ; variables: APPLICATION_DIR, CONFIG_DIR, LOG_DIR, and TEMPLATES_DIR.
 !MACRO AvStandardQuestionsPage
-  !INSERTMACRO AvStandardSubdirVariables
+  !INSERTMACRO CreateEasyCustomDirPathVar "APPLICATION_DIR"
+  !INSERTMACRO CreateEasyCustomDirPathVar "CONFIG_DIR"
+  !INSERTMACRO CreateEasyCustomDirPathVar "LOG_DIR"
+  Var TEMPLATES_DIR
 
   !INSERTMACRO EasyCustomPageBegin "StandardQuestions" "Additional File Paths" "Please choose locations for these files."
     !INSERTMACRO EasyCustomFilePath "APPLICATION_DIR" "Application file location:"
