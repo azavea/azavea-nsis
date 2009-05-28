@@ -58,10 +58,10 @@
 ;------------------------------------------------------------------------------
 ; Call this macro from .onVerifyInstDir if you are using the standard questions.
 !MACRO AvStandardQuestionsOnVerify
-  StrCpy $APPLICATION_DIR "${DEFAULT_APP_DIR}"
-  StrCpy $CONFIG_DIR "${DEFAULT_CONF_DIR}"
-  StrCpy $LOG_DIR "${DEFAULT_LOG_DIR}"
-  StrCpy $TEMPLATES_DIR "${DEFAULT_TEMPLATES_DIR}"
+  !INSERTMACRO InitVar "APPLICATION_DIR" "${DEFAULT_APP_DIR}"
+  !INSERTMACRO InitVar "CONFIG_DIR" "${DEFAULT_CONF_DIR}"
+  !INSERTMACRO InitVar "LOG_DIR" "${DEFAULT_LOG_DIR}"
+  !INSERTMACRO InitVar "TEMPLATES_DIR" "${DEFAULT_TEMPLATES_DIR}"
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
