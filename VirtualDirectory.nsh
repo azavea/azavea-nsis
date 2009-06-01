@@ -24,7 +24,7 @@
   !INSERTMACRO SetPermissions "${DEST_REAL}" "ASPNET" "R"
   !INSERTMACRO SetPermissions "${DEST_REAL}" "NETWORK SERVICE" "R"
   Call GetIUSRAccount
-  DetailPrint "IUSR Account = $IUSR_ACCT_USERNAME"
+  !INSERTMACRO AvLog "IUSR Account = $IUSR_ACCT_USERNAME"
   !INSERTMACRO SetPermissions "${DEST_REAL}" "$IUSR_ACCT_USERNAME" "R"
 !MACROEND
 
@@ -47,10 +47,11 @@ Var CVDIR_REAL_PATH
 Var CVDIR_PRODUCT_NAME
 Var CVDIR_DEFAULT_DOC
 Function CreateVDir
- 
-DetailPrint "Creating virtual directory $CVDIR_VIRTUAL_NAME";
+Push $0
+Push $1 
+!INSERTMACRO AvLog "Creating virtual directory '$CVDIR_VIRTUAL_NAME' at '$CVDIR_REAL_PATH'";
 ;Open a VBScript File in the temp dir for writing
-DetailPrint "Creating $TEMP\createVDir.vbs";
+!INSERTMACRO AvLog "Creating $TEMP\createVDir.vbs";
 FileOpen $0 "$TEMP\createVDir.vbs" w
  
 ;Write the script:
@@ -63,7 +64,11 @@ FileWrite $0 "  If (Err.Number <> -2147024713) Then$\n"
 FileWrite $0 "    message = $\"Error $\" & Err.Number$\n"
 FileWrite $0 "    message = message & $\" trying to create IIS virtual directory.$\" & chr(13)$\n"
 FileWrite $0 "    message = message & $\"Please check your IIS settings (inetmgr).$\"$\n"
-FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
 FileWrite $0 "    WScript.Quit (Err.Number)$\n"
 FileWrite $0 "  End If$\n"
 FileWrite $0 "  ' Error -2147024713 means that the virtual directory already exists.$\n"
@@ -73,13 +78,21 @@ FileWrite $0 "  Set Dir = GetObject($\"IIS://LocalHost/W3SVC/1/ROOT/$CVDIR_VIRTU
 FileWrite $0 "  If (Dir.Path <> $\"$CVDIR_REAL_PATH$\") Then$\n"
 FileWrite $0 "    message = $\"Virtual Directory $CVDIR_VIRTUAL_NAME already exists pointing at a different folder ($\" + Dir.Path + $\").$\" + chr(13)$\n"
 FileWrite $0 "    message = message + $\"Please delete the virtual directory using the IIS console (inetmgr), and install again.$\"$\n"
-FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
 FileWrite $0 "    Wscript.Quit (Err.Number)$\n"
 FileWrite $0 "  End If$\n"
 FileWrite $0 "  If (Dir.AspAllowSessionState <> True  Or  Dir.AccessScript <> True) Then$\n"
 FileWrite $0 "    message = $\"Virtual Directory $CVDIR_VIRTUAL_NAME already exists and has incompatible parameters.$\" + chr(13)$\n"
 FileWrite $0 "    message = message + $\"Please delete the virtual directory using the IIS console (inetmgr), and install again.$\"$\n"
-FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
 FileWrite $0 "    Wscript.Quit (Err.Number)$\n"
 FileWrite $0 "  End If$\n"
 FileWrite $0 "  Wscript.Quit (0)$\n"
@@ -105,27 +118,28 @@ FileWrite $0 "If (Err.Number <> 0) Then$\n"
 FileWrite $0 " message = $\"Error $\" & Err.Number$\n"
 FileWrite $0 " message = message & $\" trying to create the virtual directory at 'IIS://LocalHost/W3SVC/1/ROOT/$CVDIR_VIRTUAL_NAME'$\" & chr(13)$\n"
 FileWrite $0 " message = message & $\"Please check your IIS settings (inetmgr).$\"$\n"
-FileWrite $0 " MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 " MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
 FileWrite $0 " WScript.Quit (Err.Number)$\n"
 FileWrite $0 "End If$\n"
  
 FileClose $0
  
-DetailPrint "Executing $TEMP\createVDir.vbs"
-nsExec::ExecToLog /TIMEOUT=20000 '"$SYSDIR\cscript.exe" "$TEMP\createVDir.vbs"'
-Pop $1
-StrCmp $1 "0" CreateVDirOK
-DetailPrint "Error $1 in CreateVDir.vbs"
-Abort "Failed to create IIS Virtual Directory"
- 
-CreateVDirOK:
-DetailPrint "Successfully created IIS virtual directory"
+!INSERTMACRO AvExec '"$SYSDIR\cscript.exe" "$TEMP\createVDir.vbs"'
+!INSERTMACRO AvLog "Successfully created IIS virtual directory"
 Delete "$TEMP\createVDir.vbs"
+ 
+Pop $1
+Pop $0
 FunctionEnd
 
 Var IUSR_ACCT_USERNAME
 Function GetIUSRAccount
-	DetailPrint "Creating $TEMP\iisAnon.vbs"
+	!INSERTMACRO AvLog "Getting IIS Anonymous Username"
+	!INSERTMACRO AvLog "Creating $TEMP\iisAnon.vbs"
 	; Save the old value of $0 on the stack.
 	Push $0
 	FileOpen $0 "$TEMP\iisAnon.vbs" w
@@ -158,24 +172,12 @@ Function GetIUSRAccount
 
 	FileClose $0
 	
-	DetailPrint "Executing $TEMP\iisAnon.vbs"
-	nsExec::ExecToStack /TIMEOUT=20000 '"$SYSDIR\cscript.exe" //Nologo "$TEMP\iisAnon.vbs"'
-	Pop $0 ; return code
-	StrCmp $0 "0" GetAnonOk
-		Pop $0
-		DetailPrint "Error $0 in iisAnon.vbs"
-		Abort "Failed to get IIS Anonymous Username"
-		Goto AnonUsrEnd
-	
-	GetAnonOk:
-		Pop $0
-		StrCpy $IUSR_ACCT_USERNAME $0
-		!INSERTMACRO EnsureEndsWithout $IUSR_ACCT_USERNAME "$\r$\n"
+	!INSERTMACRO AvExecIntoVariable '"$SYSDIR\cscript.exe" //Nologo "$TEMP\iisAnon.vbs"' $IUSR_ACCT_USERNAME
+	!INSERTMACRO EnsureEndsWithout $IUSR_ACCT_USERNAME "$\r$\n"
 
-	AnonUsrEnd:
-		; Restore the old value of $0
-		Pop $0
-		Delete "$TEMP\iisAnon.vbs"
+	; Restore the old value of $0
+	Pop $0
+	Delete "$TEMP\iisAnon.vbs"
 FunctionEnd
  
 ;--------------------------------
@@ -183,10 +185,11 @@ FunctionEnd
 Var DVDIR_VIRTUAL_NAME
 Var DVDIR_PRODUCT_NAME
 Function un.DeleteVDir
- 
-DetailPrint "Deleting virtual directory $DVDIR_VIRTUAL_NAME";
+Push $0 
+Push $1
+!INSERTMACRO AvLog "Deleting virtual directory '$DVDIR_VIRTUAL_NAME'";
 ;Open a VBScript File in the temp dir for writing
-DetailPrint "Creating $TEMP\deleteVDir.vbs";
+!INSERTMACRO AvLog "Creating $TEMP\deleteVDir.vbs";
 FileOpen $0 "$TEMP\deleteVDir.vbs" w
  
 ;Write the script:
@@ -196,28 +199,33 @@ FileWrite $0 "On Error Resume Next$\n$\n"
 FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/1/ROOT/$DVDIR_VIRTUAL_NAME$\")$\n$\n"
 FileWrite $0 "IISObject.AppDelete 'Delete the web application$\n"
 FileWrite $0 "If (Err.Number <> 0) Then$\n"
-FileWrite $0 " MsgBox $\"Error trying to delete the application at [IIS://LocalHost/W3SVC/1/ROOT/$DVDIR_VIRTUAL_NAME]$\", vbCritical, $\"$DVDIR_PRODUCT_NAME$\"$\n"
+FileWrite $0 "    message = $\"Error trying to delete the application at [IIS://LocalHost/W3SVC/1/ROOT/$DVDIR_VIRTUAL_NAME]$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$DVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
 FileWrite $0 " WScript.Quit (Err.Number)$\n"
 FileWrite $0 "End If$\n$\n"
  
 FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/1/ROOT$\")$\n$\n"
 FileWrite $0 "IIsObject.Delete $\"IIsWebVirtualDir$\", $\"$DVDIR_VIRTUAL_NAME$\"$\n"
 FileWrite $0 "If (Err.Number <> 0) Then$\n"
-FileWrite $0 " MsgBox $\"Error trying to delete the virtual directory '$DVDIR_VIRTUAL_NAME' at 'IIS://LocalHost/W3SVC/1/ROOT'$\", vbCritical, $\"$DVDIR_PRODUCT_NAME$\"$\n"
+FileWrite $0 "    message = $\"Error trying to delete the virtual directory '$DVDIR_VIRTUAL_NAME' at 'IIS://LocalHost/W3SVC/1/ROOT'$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$DVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
 FileWrite $0 " Wscript.Quit (Err.Number)$\n"
 FileWrite $0 "End If$\n$\n"
  
 FileClose $0
  
-DetailPrint "Executing $TEMP\deleteVDir.vbs"
-nsExec::Exec /TIMEOUT=20000 '"$SYSDIR\cscript.exe" "$TEMP\deleteVDir.vbs"'
-Pop $1
-StrCmp $1 "0" +2
-DetailPrint "Error $1 in deleteVDir.vbs"
-goto DeleteVDirEnd
-DetailPrint "Virtual Directory $DVDIR_VIRTUAL_NAME successfully removed."
+!INSERTMACRO AvExecIgnoreErrors '"$SYSDIR\cscript.exe" "$TEMP\deleteVDir.vbs"'
 Delete "$TEMP\deleteVDir.vbs"
-DeleteVDirEnd:
+Pop $1
+Pop $0
 FunctionEnd
 
 !ENDIF ;VIRTUAL_DIR_IMPORT

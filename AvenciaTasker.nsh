@@ -32,7 +32,7 @@
     ; Move the app.config file from the config folder (where it was tokenswapped) to the tasker app folder
     Rename ${CONFIG_DIR}\Avencia.Utilities.Tasker.exe.config ${TASKER_DEST_DIR}\Avencia.Utilities.Tasker.exe.config
   
-    DetailPrint "Creating Avencia Tasker service for ${APP_NAME}..."
+    !INSERTMACRO AvLog "Creating Avencia Tasker service for ${APP_NAME}..."
     !INSERTMACRO CreateAndMaybeStartService ${SERVICE_NAME} "${TASKER_DEST_DIR}\Avencia.Utilities.Tasker.exe" "Avencia Tasker Utility for ${APP_NAME}"
   SectionEnd
 

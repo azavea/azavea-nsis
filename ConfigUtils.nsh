@@ -64,26 +64,34 @@
 ; TEMPL_DIR       - The directory containing template files.
 ; DEST_DIR        - The output directory for tokenized template files.
 !MACRO Merginate OUTPUT_MER INPUT_MERS TEMPL_DIR DEST_DIR
-  Push $0
+  Push $8
+  Push $7
+  ; Set the flag to nogui if silent, or -c (meaning conditional) if non-silent.
+  ${If} ${Silent}
+    StrCpy $7 "--nogui"
+  ${Else}
+    StrCpy $7 "-c"
+  ${EndIf}
   ; Run the Merginator
-  StrCpy $0 '"${MERGINATOR_DIR}\Avencia.Tools.Merginator.UI.exe" ${INPUT_MERS} -mo "${OUTPUT_MER}" -t "${TEMPL_DIR}" -d "${DEST_DIR}" -c'
-  DetailPrint "Executing the Merginator: $0"
-  nsExec::ExecToLog '$0'
-  Pop $0
+  StrCpy $8 '"${MERGINATOR_DIR}\Avencia.Tools.Merginator.UI.exe" ${INPUT_MERS} -mo "${OUTPUT_MER}" -t "${TEMPL_DIR}" -d "${DEST_DIR}" $7'
+  !INSERTMACRO AvLog "Executing the Merginator"
+  !INSERTMACRO AvExec '$8'
+  Pop $7
+  Pop $8
 !MACROEND
 
 ;------------------------------------------------------------------------------
 ; Executes tokenswap.  Tokenswap's exe must be TOKENSWAP_LOCATION
 !MACRO TokenSwap TEMPLATE_FILE MERGE_FILE DESTINATION_DIR TOKENSWAP_LOCATION
-  DetailPrint "Swapping tokens in ${TEMPLATE_FILE}"
-  nsExec::ExecToLog '"${TOKENSWAP_LOCATION}" -mFile "${MERGE_FILE}" -tFiles "${TEMPLATE_FILE}" -dDir "${DESTINATION_DIR}" -nopause'
+  !INSERTMACRO AvLog "Swapping tokens in ${TEMPLATE_FILE}"
+  !INSERTMACRO AvExec '"${TOKENSWAP_LOCATION}" -mFile "${MERGE_FILE}" -tFiles "${TEMPLATE_FILE}" -dDir "${DESTINATION_DIR}" -nopause'
 !MACROEND
 
 ;------------------------------------------------------------------------------
 ; Executes tokenswap against an entire directory.  Tokenswap's exe must be TOKENSWAP_LOCATION
 !MACRO TokenSwapDir TEMPLATE_DIR MERGE_FILE DESTINATION_DIR TOKENSWAP_LOCATION
-  DetailPrint "Swapping tokens in files in ${TEMPLATE_DIR}"
-  nsExec::ExecToLog '"${TOKENSWAP_LOCATION}" -mFile "${MERGE_FILE}" -tDir "${TEMPLATE_DIR}" -dDir "${DESTINATION_DIR}" -nopause'
+  !INSERTMACRO AvLog "Swapping tokens in files in ${TEMPLATE_DIR}"
+  !INSERTMACRO AvExec '"${TOKENSWAP_LOCATION}" -mFile "${MERGE_FILE}" -tDir "${TEMPLATE_DIR}" -dDir "${DESTINATION_DIR}" -nopause'
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -116,16 +124,17 @@
   ; After a fresh install, there are no config files.  Check and see if there is a merge file.
   FindFirst $R0 $R1 "${MERGE_FILE}"
   ; If there is a merge file, merge it.
-  StrCmp $R1 "" warn merge
-  warn:
-    MessageBox MB_OK|MB_ICONEXCLAMATION \
-      "No merge file found, cannot automatically populate config files. $\n$\n\
-      Please remember to populate the config files after the installation completes."
-    goto done
-  merge:
-    DetailPrint 'Executing command: ${MERGE_CMD}"'
-    nsExec::ExecToLog '${MERGE_CMD}'
-  done:
+  ${If} $R1 == ""
+    ${If} ${Silent}
+      !INSERTMACRO AvFail "ERROR: No merge file found, cannot populate config files."
+    ${Else}
+      MessageBox MB_OK|MB_ICONEXCLAMATION \
+        "No merge file found, cannot automatically populate config files. $\n$\n\
+        Please remember to populate the config files after the installation completes."
+    ${EndIf}
+  ${Else}
+    !INSERTMACRO AvExec '${MERGE_CMD}'
+  ${EndIf}
 
   Pop $R1
   Pop $R0
@@ -205,7 +214,7 @@
     !If "${ON_CHOOSE_FUNC}" != ""
       Call ${ON_CHOOSE_FUNC}
     !Endif
-    DetailPrint "Selection: $${CUSTOM_NAME}_SELECTION";
+    !INSERTMACRO AvLog "Selection: $${CUSTOM_NAME}_SELECTION";
 
     Pop $6
     Pop $5
@@ -230,7 +239,7 @@
 !MACRO AddMergeFileOption CUSTOM_NAME FILENAME_OPTION
   StrCpy $${CUSTOM_NAME}_OPTION_LIST "$${CUSTOM_NAME}_OPTION_LIST${FILENAME_OPTION};"
   !INSERTMACRO EasyCustomListBoxEntry "${CUSTOM_NAME}_LISTBOX" "${FILENAME_OPTION}"
-  DetailPrint "Adding option ${FILENAME_OPTION} to ${CUSTOM_NAME}"
+  !INSERTMACRO AvLog "Adding option ${FILENAME_OPTION} to ${CUSTOM_NAME}"
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
@@ -241,7 +250,7 @@
 ;                     this option, $${CUSTOM_NAME}_SELECTION will be "".
 !MACRO MergeFileSelectionPageEnd CUSTOM_NAME ALLOW_NO_DEFAULTS
   !If "${ALLOW_NO_DEFAULTS}" == "true"
-    DetailPrint "Adding No Defaults option."
+    !INSERTMACRO AvLog "Adding No Defaults option."
     ; Add a blank option.
     StrCpy $${CUSTOM_NAME}_OPTION_LIST "$${CUSTOM_NAME}_OPTION_LIST;"
     !INSERTMACRO EasyCustomListBoxEntry "${CUSTOM_NAME}_LISTBOX" "No Defaults"
@@ -255,10 +264,10 @@
 ; CUSTOM_NAME    - The same name you passed to MergeFileSelectionPageBegin
 ; SELECTED_INDEX - The index (0-based) of the default merge file selection.
 !MACRO InitMergeFileValue CUSTOM_NAME SELECTED_INDEX
-  DetailPrint "Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
+  !INSERTMACRO AvLog "Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
   IntOp $${CUSTOM_NAME}_LISTBOX 0 + ${SELECTED_INDEX}
   Call ${CUSTOM_NAME}_default_onChooseMergeFile
-  DetailPrint "Done Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
+  !INSERTMACRO AvLog "Done Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
@@ -303,7 +312,7 @@
       ; If we're here, it means we have an actual name, it starts at index
       ; $5 and is $6 characters long.  So copy it into $1.
       StrCpy $1 "${OPTION_LIST}" $6 $5
-      DetailPrint "Adding merge file option: $1";
+      !INSERTMACRO AvLog "Adding merge file option: $1";
       !INSERTMACRO AddMergeFileOption "InstallLocation" "$1"
 
     decide_if_any_left: 
@@ -358,32 +367,32 @@
 ; MERGE_FILE_LIST - The variable containing the list of merge files (constructed
 ;                   using AppendMergeFile).
 !MACRO AppendSelectedMergeFileNames CUSTOM_NAME MERGE_FILE_LIST
-  DetailPrint "Appending merge files for ${CUSTOM_NAME}"
+  !INSERTMACRO AvLog "Appending merge files for ${CUSTOM_NAME}, selection: $${CUSTOM_NAME}_SELECTION"
   ; Append our merge files.
-  !If $${CUSTOM_NAME}_SELECTION != ""
+  ${If} $${CUSTOM_NAME}_SELECTION != ""
     ; See if it is a test merge file and we should first append the real one.
     Push $R8          ; length of the selection.
     Push $R9          ; Working var for pieces of the selection.
 
     StrLen $R8 $${CUSTOM_NAME}_SELECTION
     ; Skip the "_Test" check if the length is less than or equal to 5.
-    IntCmp $R8 5 ${CUSTOM_NAME}_append_selected_file ${CUSTOM_NAME}_append_selected_file
+    ${If} $R8 > 5
       ; We're only here if the length was greater than 5.
       StrCpy $R9 $${CUSTOM_NAME}_SELECTION "" -5   ; Get the last 5 chars into $R9
-      StrCmp $R9 "_Test" 0 ${CUSTOM_NAME}_append_selected_file
-        ; We're only here if the last 5 chars were "_Test".
+      ${If} $R9 == "_Test"
         IntOp $R8 $R8 - 5
         StrCpy $R9 $${CUSTOM_NAME}_SELECTION $R8    ; Copy all but the last 5 chars into $R9.
         ; Now append that name.
-        DetailPrint "Appending merge file ${MERGE_DIR}\$R9.mer"
+        !INSERTMACRO AvLog "Appending merge file ${MERGE_DIR}\$R9.mer"
         !INSERTMACRO AppendMergeFile ${MERGE_FILE_LIST} "${MERGE_DIR}\$R9.mer"
+      ${EndIf}
+    ${EndIf}
 
-    ${CUSTOM_NAME}_append_selected_file:    ; This is a label
-    DetailPrint "Appending merge file ${MERGE_DIR}\$${CUSTOM_NAME}_SELECTION.mer"
+    !INSERTMACRO AvLog "Appending merge file ${MERGE_DIR}\$${CUSTOM_NAME}_SELECTION.mer"
     !INSERTMACRO AppendMergeFile ${MERGE_FILE_LIST} "${MERGE_DIR}\$${CUSTOM_NAME}_SELECTION.mer"
     Pop $R9
     Pop $R8
-  !EndIf
+  ${EndIf}
 !MACROEND
 
 !ENDIF ;CONFIG_UTILS_IMPORT

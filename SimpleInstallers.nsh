@@ -83,6 +83,7 @@
 
   Function .onInit
     Call StartupChecks
+    !INSERTMACRO AvStandardQuestionsOnInit
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -121,15 +122,15 @@
     ; Substitute values in the config file.
     !INSERTMACRO OpenMergeFile "${MERGE_DIR}\install.mer" $0
 
-    DetailPrint "Using log directory: $LOG_DIR"
+    !INSERTMACRO AvLog "Using log directory: $LOG_DIR"
     !INSERTMACRO WriteToken $0 "logdir" "$LOG_DIR"
     !INSERTMACRO WriteToken $0 "log_dir" "$LOG_DIR"
 
-    DetailPrint "Using config directory: $CONFIG_DIR"
+    !INSERTMACRO AvLog "Using config directory: $CONFIG_DIR"
     !INSERTMACRO WriteToken $0 "configdir" "$CONFIG_DIR"
     !INSERTMACRO WriteToken $0 "config_dir" "$CONFIG_DIR"
 
-    DetailPrint "Using bin directory: $APPLICATION_DIR"
+    !INSERTMACRO AvLog "Using bin directory: $APPLICATION_DIR"
     !INSERTMACRO WriteToken $0 "exedir" "$APPLICATION_DIR"
     !INSERTMACRO WriteToken $0 "exe_dir" "$APPLICATION_DIR"
 !MACROEND
@@ -172,7 +173,7 @@
     File ${SOURCE_DIR}\*.dll
 
     ; Move over the app config.
-    DetailPrint "Renaming $CONFIG_DIR\${APP_CONFIG_IS} to $APPLICATION_DIR\${APP_CONFIG_SHOULD_BE}"
+    !INSERTMACRO AvLog "Renaming $CONFIG_DIR\${APP_CONFIG_IS} to $APPLICATION_DIR\${APP_CONFIG_SHOULD_BE}"
     Rename "$CONFIG_DIR\${APP_CONFIG_IS}" "$APPLICATION_DIR\${APP_CONFIG_SHOULD_BE}"
   SectionEnd
 !MACROEND

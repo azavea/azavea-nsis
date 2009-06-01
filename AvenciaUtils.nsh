@@ -1,6 +1,24 @@
 ;c-style prevention of duplicate imports.
 !IFNDEF AVENCIA_UTILS_IMPORT
 !DEFINE AVENCIA_UTILS_IMPORT "yup"
+!IFNDEF If
+  !INCLUDE "LogicLib.nsh"
+!ENDIF
+
+;------------------------------------------------------------------------------
+; NSIS doesn't provide any way of sending output to the user at all.
+; The only way to create an install.log file is to RECOMPILE NSIS for
+; crying out loud.  So this alternate macro uses echo to dump a message
+; to a log file.
+;
+; MESSAGE - The error message to write to installfailure.log.
+!MACRO AvLog MESSAGE
+  ${If} ${Silent}
+    FileWrite $INSTALL_LOG `${MESSAGE}$\r$\n`
+  ${Else}
+    DetailPrint `${MESSAGE}`
+  ${EndIf}
+!MACROEND
 
 ; This contains a bunch of utility functions for doing basic things that are common to many installers.
 ; These are basic things like saving install/uninstall information, copying standard files
@@ -10,7 +28,7 @@
 ; The name defined on the 'Name "application name"' line is used for display names.
 
 ; Some standard defines used in multiple places.
-!DEFINE UNINST_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+!DEFINE UNINST_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}$INSTALL_ID"
 
 ;------------------------------------------------------------------------------
 ; Saves information needed at uninstall time to the appropriate registry key.
@@ -27,6 +45,7 @@
 ; DEST_VAR - the variable to insert the value into.  Unset values will be "".
 !MACRO GetUninstallValue KEY DEST_VAR
   ReadRegStr ${DEST_VAR} HKLM ${UNINST_REG_KEY} "${KEY}"
+  !INSERTMACRO AvLog "Read saved value '${KEY}'='${DEST_VAR}'"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -35,9 +54,9 @@
 !MACRO SaveStandardUninstallInfo ADDREMOVE_ICON ICON_PATH
   ; Show us in add/remove programs
   ; the first two values are required
-  !INSERTMACRO SaveUninstallValue "DisplayName" "$(^Name)"
+  !INSERTMACRO SaveUninstallValue "DisplayName" "$(^Name)$INSTALL_ID"
   !DEFINE UNINSTALLER_FILE "$INSTDIR\Uninstall${APP_NAME}.exe"
-  !INSERTMACRO SaveUninstallValue "UninstallString" "${UNINSTALLER_FILE}"
+  !INSERTMACRO SaveUninstallValue "UninstallString" "${UNINSTALLER_FILE} /INSTALL_ID=$INSTALL_ID"
   ; Icon and other misc info.
   !INSERTMACRO SaveUninstallValue "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
   !INSERTMACRO SaveUninstallValue "Publisher" "Avencia Incorporated"
@@ -70,11 +89,23 @@
 !MACRO AvStandardUninstaller
 ; Make sure the load variables first before the rest of the uninstall happens.
   Function un.onInit
+    !INSERTMACRO UnInitVar "INSTALL_LOG" "uninstall.log"
+    ; This is an ugly hack.  We open the install log but we only close it
+    ; if you call AvFail.
+    ; We tried opening and closing every time we want to write a line, but
+    ; then only the last line was ever getting written (apparently it wasn't
+    ; actually writing to disk until the installer exited?).
+    ; Also note that before this call, $INSTALL_LOG has the file name, and
+    ; after the FileOpen call it has the file handle instead.
+    ${If} ${Silent}
+      FileOpen $INSTALL_LOG "$INSTALL_LOG" w
+    ${EndIf}
+    !INSERTMACRO UnInitVar "INSTALL_ID" ""
     !INSERTMACRO GetUninstallValue "InstallLocation" $INSTDIR
   FunctionEnd
 
   Section "un.EntireApp"
-    DetailPrint "Removing installed dir $INSTDIR"
+    !INSERTMACRO AvLog "Removing installed dir $INSTDIR"
     RmDir /r $INSTDIR
   SectionEnd
 
@@ -94,7 +125,7 @@
   DeleteRegKey HKLM ${UNINST_REG_KEY}
   StrCmp $R0 "" done
     ; Delete the uninstaller file if we know where it was.
-    DetailPrint "Deleting uninstaller file $R0"
+    !INSERTMACRO AvLog "Deleting uninstaller file $R0"
     ; If this uninstaller is being run programatically, a delete on its exe will
     ; not succeed.  So set /REBOOTOK so that even if we can't delete it now, it'll
     ; get deleted when we reboot.
@@ -105,6 +136,151 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; This macro gets the command line value of parameter PARAM_NAME and puts it
+; into DEST_VAR.  If the command is quoted ("/E Jeff Rules") we use the closing
+; quote to terminate the value, so in that example the value would be "Jeff Rules".
+; If unquoted (/E Jeff Rules) we use the first space, so the value would be "Jeff".
+; By the way, this macro doesn't handle escaped quotes.
+; PARAM_NAME: The entire parameter string to look for, I.E. "/E " or "/USER=" or
+;             "-- " or whatever.  Everything that should precede the actual value.
+; DEST_VAR: The destination variable.  Must be a variable.  The value will be ""
+;           if the parameter was not found in the param string.
+!MACRO GetCommandOption PARAM_NAME DEST_VAR
+  Push $0
+  Push $1
+  Push "${PARAM_NAME}"
+  Call GetSingleParameter
+  Pop ${DEST_VAR}
+  !INSERTMACRO AvLog "Value of command line param ${PARAM_NAME}: '${DEST_VAR}'"
+  Pop $1
+  Pop $0
+!MACROEND
+!MACRO UnGetCommandOption PARAM_NAME DEST_VAR
+  Push $0
+  Push $1
+  Push "${PARAM_NAME}"
+  Call un.GetSingleParameter
+  Pop ${DEST_VAR}
+  !INSERTMACRO AvLog "Value of command line param ${PARAM_NAME}: '${DEST_VAR}'"
+  Pop $1
+  Pop $0
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Sets a variable to a default value.  Also checks the command line and will
+; use the command line value over the default if a command line value is
+; provided.  Command line values are expected to be in the form /VAR_NAME=<value>.
+;
+; VAR_NAME - The NAME of the variable that will be defaulted.  In other
+;            words, if you are using a variable called $MY_VAR, you should
+;            pass the STRING "MY_VAR".
+; DEFAULT_VALUE - The default value.  This will be used if the variable has
+;                 no value on the command line.
+!MACRO InitVar VAR_NAME DEFAULT_VALUE
+  ; Check for a command line param.
+  !INSERTMACRO GetCommandOption "/${VAR_NAME}=" $${VAR_NAME}
+  ; No command line param, set it to the default value.
+  StrCmp $${VAR_NAME} "" "" +2
+    StrCpy $${VAR_NAME} "${DEFAULT_VALUE}"
+!MACROEND
+!MACRO UnInitVar VAR_NAME DEFAULT_VALUE
+  ; Check for a command line param.
+  !INSERTMACRO UnGetCommandOption "/${VAR_NAME}=" $${VAR_NAME}
+  ; No command line param, set it to the default value.
+  StrCmp $${VAR_NAME} "" "" +2
+    StrCpy $${VAR_NAME} "${DEFAULT_VALUE}"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Call this instead of Abort unless you're handling silent installs specially.
+; This will log the message and close the log file (if it is a silent installer).
+;
+; MESSAGE - The error message to write to the install log.
+!MACRO AvFail MESSAGE
+  !INSERTMACRO AvLog "${MESSAGE}"
+  ${If} ${Silent}
+    FileClose $INSTALL_LOG
+  ${EndIf}
+  Abort
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Call this instead of calling nsExec directly so that the output is correctly
+; logged either to the details page or to the install log.
+;
+; COMMAND - The command to execute.
+!MACRO AvExec COMMAND
+  Push $0
+  Push $1
+  !INSERTMACRO AvLog `Executing: ${COMMAND}`
+  nsExec::ExecToStack `${COMMAND}`
+  ; The first thing on the stack should be the return code.
+  Pop $0
+  ; The next thing should be any console output.
+  Pop $1
+  ${If} $0 != 0
+    !INSERTMACRO AvFail "ERROR: Exec failed, returned: $0, console output: $1"
+  ${Else}
+    !INSERTMACRO AvLog "Exec returned: $0"
+    !INSERTMACRO AvLog "Exec Console Output: $1"
+  ${EndIf}
+  ; Now restore the original values
+  Pop $1
+  Pop $0
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Call this instead of calling nsExec directly so that the output is correctly
+; logged either to the details page or to the install log.  This signature
+; allows access to the console output from the command.
+;
+; COMMAND - The command to execute.
+; VARIABLE - The variable to put the console output into.
+!MACRO AvExecIntoVariable COMMAND VARIABLE
+  Push $0
+  !INSERTMACRO AvLog `Executing: ${COMMAND}`
+  nsExec::ExecToStack `${COMMAND}`
+  ; The first thing on the stack should be the return code.
+  Pop $0
+  ; The next thing should be any console output.
+  Pop ${VARIABLE}
+  ${If} $0 != 0
+    !INSERTMACRO AvFail "ERROR: Exec failed, returned: $0, console output: ${VARIABLE}"
+  ${Else}
+    !INSERTMACRO AvLog "Exec returned: $0"
+    !INSERTMACRO AvLog "Exec Console Output: ${VARIABLE}"
+  ${EndIf}
+  ; Now restore the original value of $0.
+  Pop $0
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Call this instead of calling nsExec directly so that the output is correctly
+; logged either to the details page or to the install log.
+;
+; COMMAND - The command to execute.
+!MACRO AvExecIgnoreErrors COMMAND
+  Push $0
+  !INSERTMACRO AvLog `Executing: ${COMMAND}`
+  nsExec::ExecToStack `${COMMAND}`
+  ; The first thing on the stack should be the return code.
+  Pop $0
+  ${If} $0 != 0
+    !INSERTMACRO AvLog "Exec failed, returned: $0, but continuing anyway."
+  ${Else}
+    !INSERTMACRO AvLog "Exec returned: $0"
+  ${EndIf}
+  ; The next thing should be any console output.
+  Pop $0
+  !INSERTMACRO AvLog "Exec Console Output: $0"
+  ; Now restore the original value of $0.
+  Pop $0
+!MACROEND
+
+Var REINSTALL_OVER
+Var INSTALL_LOG
+Var INSTALL_ID
+;------------------------------------------------------------------------------
 ; This function checks for the following:
 ; 1) That there isn't another copy of this installer running.
 ; 2) That there is not an old version of the application.
@@ -112,51 +288,89 @@
 Function StartupChecks
   Push $R0
   Push $R1
+  Push $R2
+
+  ; This will check for these variables on the command line.
+  !INSERTMACRO InitVar "REINSTALL_OVER" "false"
+  !INSERTMACRO InitVar "INSTALL_LOG" "install.log"
+  !INSERTMACRO InitVar "INSTALL_ID" ""
+  ; We don't want to actually set INSTDIR unless it is on the command line, so
+  ; use $R2 while checking.
+  !INSERTMACRO GetCommandOption "/INSTDIR=" $R2
+  StrCmp "$R2" "" +2
+    StrCpy $INSTDIR "$R2"
+
+  ; This is an ugly hack.  We open the install log but we only close it
+  ; if you call AvFail.
+  ; We tried opening and closing every time we want to write a line, but
+  ; then only the last line was ever getting written (apparently it wasn't
+  ; actually writing to disk until the installer exited?).
+  ; Also note that before this call, $INSTALL_LOG has the file name, and
+  ; after the FileOpen call it has the file handle instead.
+  ${If} ${Silent}
+    FileOpen $INSTALL_LOG "$INSTALL_LOG" w
+  ${EndIf}
 
   ; This pushes something onto the stack, so pop it out in $R0
   System::Call 'kernel32::CreateMutexA(i 0, i 0, t "${APP_NAME}_Setup_Mutex") i .r1 ?e'
   Pop $R0
  
-  StrCmp $R0 0 +3
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The installer is already running."
-    Abort
+  ${If} $R0 != 0
+    ${If} ${Silent}
+      !INSERTMACRO AvFail "ERROR: The $(^Name) installer is already running."
+    ${Else}
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The installer is already running."
+      Abort
+    ${EndIf}
+  ${EndIf}
 
   ; Check for the old version.
   !INSERTMACRO GetUninstallValue "UninstallString" $R0
-  StrCmp $R0 "" continue_install
+  ${If} $R0 != ""
     !INSERTMACRO GetUninstallValue "InstallLocation" $R1
-    StrCmp $R1 "" cant_uninstall can_uninstall
-    cant_uninstall:
-      MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
-        "$(^Name) is already installed. $\n$\nThe installed version \
-        is too old to be automatically uninstalled.  You can uninstall \
-        the old version using the Add/Remove Programs dialog.$\n$\n \
-        Do you wish to install anyway (not recommended)?" \
-        IDYES continue_install
-        Abort
-    can_uninstall:
-      MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION|MB_DEFBUTTON1 \
-        "$(^Name) is already installed. $\n$\nDo you want to uninstall \
-        the other copy before installing this one (highly recommended)?" \
-        IDYES uninst IDNO continue_install
-        Abort
+    ${If} $R1 == ""
+      ${If} ${Silent}
+        !INSERTMACRO AvFail "ERROR: $(^Name) is already installed, but the current version is \
+                             too old to be uninstalled automatically.  Please uninstall \
+                             it via Add/Remove Programs."
+      ${Else}
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
+          "$(^Name) is already installed. $\n$\nThe installed version \
+          is too old to be automatically uninstalled.  You can uninstall \
+          the old version using the Add/Remove Programs dialog.$\n$\n \
+          Do you wish to install anyway (not recommended)?" \
+          IDYES continue_install
+          Abort
+      ${EndIf}
+    ${Else}
+      ${If} "$REINSTALL_OVER" != "true"
+        ${If} ${Silent}
+          !INSERTMACRO AvFail "ERROR: $(^Name) is already installed.  To uninstall the current \
+                             version automatically, use /REINSTALL_OVER=true."
+        ${Else}
+          MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION|MB_DEFBUTTON1 \
+            "$(^Name) is already installed. $\n$\nDo you want to uninstall \
+            the other copy before installing this one (highly recommended)?" \
+            IDYES uninst IDNO continue_install
+            Abort
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
   
     ;Run the uninstaller
     uninst:
       ClearErrors
-      ; ExecWait doesn't actually wait, so instead we use nsExec.
       ; R0 contains the uninstaller file, R1 contains the old installed path.
-      nsExec::ExecToLog '$R0 _?=$R1'
- 
-      IfErrors uninstall_failed continue_install
-      uninstall_failed:
-        MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
-          "Uninstall of old version failed.  $\n$\nTry to install the new \
-          version anyway?" \
-        IDYES continue_install
-        Abort
-  continue_install:
+      ${If} ${Silent}
+        !INSERTMACRO AvExecIgnoreErrors '"$R0" /INSTALL_ID=$INSTALL_ID /S _?=$R1'
+      ${Else}
+        !INSERTMACRO AvExecIgnoreErrors '"$R0" /INSTALL_ID=$INSTALL_ID _?=$R1'
+      ${EndIf}
+  ${EndIf}
 
+  continue_install:
+  
+  Pop $R2
   Pop $R1
   Pop $R0
 FunctionEnd
@@ -186,8 +400,9 @@ FunctionEnd
   StrLen $R0 ${END_WITH} ; how long is the ending string
   IntOp $R1 0 - $R0   ; how far to offset back from the end of the string
   StrCpy $R2 ${VALUE} $R0 $R1 ;take N chars starting N from the end of VALUE put in R2
-  StrCmp $R2 ${END_WITH} +2 ;if the last N chars = END_WITH, good.
+  ${If} $R2 != "${END_WITH}" ;if the last N chars = END_WITH, good.
     StrCpy ${VALUE} "${VALUE}${END_WITH}" ; otherwise, append END_WITH
+  ${EndIf}
 
   Pop $R2
   Pop $R1
@@ -206,8 +421,9 @@ FunctionEnd
   StrLen $R0 ${END_WITH} ; how long is the ending string
   IntOp $R1 0 - $R0   ; how far to offset back from the end of the string
   StrCpy $R2 ${VALUE} $R0 $R1 ;take N chars starting N from the end of VALUE put in R2
-  StrCmp $R2 ${END_WITH} 0 +2 ;if the last N chars != END_WITH, good.
+  ${If} $R2 == "${END_WITH}" ;if the last N chars != END_WITH, good.
     StrCpy ${VALUE} "${VALUE}" "$R1"; otherwise, chop off END_WITH length chars
+  ${EndIF}
 
   Pop $R2
   Pop $R1
@@ -231,49 +447,9 @@ FunctionEnd
   StrCmp $R0 "\" 0 +2 ;if the last char = \, need to truncate.
     StrCpy $R1 $R1 -1 ; truncate
 
-  DetailPrint 'Setting permissions: "cacls.exe" "$R1" /T /E /G "${USER}":${PERMISSION}'
-  nsExec::ExecToLog '"cacls.exe" "$R1" /T /E /G "${USER}":${PERMISSION}'
+  !INSERTMACRO AvExec '"cacls.exe" "$R1" /T /E /G "${USER}":${PERMISSION}'
   Pop $R1
   Pop $R0
-!MACROEND
-
-;------------------------------------------------------------------------------
-; This macro gets the command line value of parameter PARAM_NAME and puts it
-; into DEST_VAR.  If the command is quoted ("/E Jeff Rules") we use the closing
-; quote to terminate the value, so in that example the value would be "Jeff Rules".
-; If unquoted (/E Jeff Rules) we use the first space, so the value would be "Jeff".
-; By the way, this macro doesn't handle escaped quotes.
-; PARAM_NAME: The entire parameter string to look for, I.E. "/E " or "/USER=" or
-;             "-- " or whatever.  Everything that should precede the actual value.
-; DEST_VAR: The destination variable.  Must be a variable.  The value will be ""
-;           if the parameter was not found in the param string.
-!MACRO GetCommandOption PARAM_NAME DEST_VAR
-  Push $0
-  Push $1
-  Push "${PARAM_NAME}"
-  Call GetSingleParameter
-  Pop ${DEST_VAR}
-  DetailPrint "Value of command line param ${PARAM_NAME}: '${DEST_VAR}'"
-  Pop $1
-  Pop $0
-!MACROEND
-
-;------------------------------------------------------------------------------
-; Sets a variable to a default value.  Also checks the command line and will
-; use the command line value over the default if a command line value is
-; provided.  Command line values are expected to be in the form /VAR_NAME=<value>.
-;
-; VAR_NAME - The NAME of the variable that will be defaulted.  In other
-;            words, if you are using a variable called $MY_VAR, you should
-;            pass the STRING "MY_VAR".
-; DEFAULT_VALUE - The default value.  This will be used if the variable has
-;                 no value on the command line.
-!MACRO InitVar VAR_NAME DEFAULT_VALUE
-  ; Check for a command line param.
-  !INSERTMACRO GetCommandOption "/${VAR_NAME}=" $${VAR_NAME}
-  ; No command line param, set it to the default value.
-  StrCmp $${VAR_NAME} "" "" +2
-    StrCpy $${VAR_NAME} "${DEFAULT_VALUE}"
 !MACROEND
 
 
@@ -283,10 +459,7 @@ FunctionEnd
 ;
 
 
-;------------------------------------------------------------------------------
-; This function is intended to be called by the GetCommandOption macro.
-; Pops the param name, pushes the value.
-Function GetSingleParameter
+!MACRO GetSingleParameterMacro PREFIX FUNC_PREFIX
   Pop $0
   Push $R0
   Push $R1
@@ -295,7 +468,7 @@ Function GetSingleParameter
  
   ; This loads the entire parameter string from the command line
   ; into $R0.
-  Call GetParameters
+  Call ${FUNC_PREFIX}GetParameters
   Pop $R0
 
   ; R1 contains the value-terminator, either a closing " or a space.
@@ -303,7 +476,7 @@ Function GetSingleParameter
   ; search for quoted $0
   Push $R0
   Push '"$0'
-  Call StrStr
+  Call ${FUNC_PREFIX}StrStr
   Pop $R2
   ; If we found it, $R2 will now contain:
   ; '"$0=<the rest of the param string, including any remaining params>'
@@ -314,18 +487,18 @@ Function GetSingleParameter
   StrCpy $R2 $R2 "" 1
   ; Compare $R2 with "", if equal, do nothing (meaning go to the next line),
   ; if not equal, meaning we found something, jump to foundParamString.
-  StrCmp $R2 "" "" foundParamString
+  StrCmp $R2 "" "" ${PREFIX}foundParamString
     ; Didn't find anything, try searching without a ".
     StrCpy $R1 ' ' ; change the value-terminator.
     ; search entire param list ($R0) for non quoted $0
     Push $R0
     Push '$0'
-    Call StrStr
+    Call ${FUNC_PREFIX}StrStr
     Pop $R2
 	; Check if we found anything.  If $R2 is "", we didn't find anything, so
 	; just return empty string.
-    StrCmp $R2 "" done
-foundParamString:
+    StrCmp $R2 "" ${PREFIX}done
+${PREFIX}foundParamString:
     ; If we're here, we found the parameter.
     ; copy the value after $0.
 	StrLen $R3 $0
@@ -335,15 +508,15 @@ foundParamString:
   ; terminating charater.
   Push $R2
   Push $R1
-  Call StrStr
+  Call ${FUNC_PREFIX}StrStr
   Pop $R1
   ; Now $R1 has the terminating character plus everything else.  If $R1 is
   ; empty, there wasn't anything else, so we're done.
-  StrCmp $R1 "" done
+  StrCmp $R1 "" ${PREFIX}done
   ; Get the length of $R1 so we can chop that much off the end of $R2.
   StrLen $R1 $R1
   StrCpy $R2 $R2 -$R1
-done:
+${PREFIX}done:
   ; Save the output into $1.
   StrCpy $1 $R2
   ; Restore all the working variables.
@@ -353,6 +526,15 @@ done:
   Pop $R0
   ; put the return value onto the stack.
   Push $1
+!MACROEND
+;------------------------------------------------------------------------------
+; This function is intended to be called by the GetCommandOption macro.
+; Pops the param name, pushes the value.
+Function GetSingleParameter
+  !INSERTMACRO GetSingleParameterMacro "Install" ""
+FunctionEnd
+Function un.GetSingleParameter
+  !INSERTMACRO GetSingleParameterMacro "Uninstall" "un."
 FunctionEnd
 
 ; GetParameters
@@ -360,8 +542,7 @@ FunctionEnd
  ; output, top of stack (replaces, with e.g. whatever)
  ; modifies no other variables.
  
- Function GetParameters
- 
+!MACRO GetParametersMacro PREFIX
    Push $R0
    Push $R1
    Push $R2
@@ -374,27 +555,33 @@ FunctionEnd
    StrCpy $R0 $CMDLINE $R2
    StrCmp $R0 '"' 0 +3
      StrCpy $R1 '"'
-     Goto loop
+     Goto ${PREFIX}loop
    StrCpy $R1 " "
    
-   loop:
+   ${PREFIX}loop:
      IntOp $R2 $R2 + 1
      StrCpy $R0 $CMDLINE 1 $R2
-     StrCmp $R0 $R1 get
-     StrCmp $R2 $R3 get
-     Goto loop
+     StrCmp $R0 $R1 ${PREFIX}get
+     StrCmp $R2 $R3 ${PREFIX}get
+     Goto ${PREFIX}loop
    
-   get:
+   ${PREFIX}get:
      IntOp $R2 $R2 + 1
      StrCpy $R0 $CMDLINE 1 $R2
-     StrCmp $R0 " " get
+     StrCmp $R0 " " ${PREFIX}get
      StrCpy $R0 $CMDLINE "" $R2
    
    Pop $R3
    Pop $R2
    Pop $R1
    Exch $R0
- 
+!MACROEND
+
+ Function GetParameters
+   !INSERTMACRO GetParametersMacro "Install"
+ FunctionEnd
+ Function un.GetParameters
+   !INSERTMACRO GetParametersMacro "Uninstall"
  FunctionEnd
 
  ; StrStr
@@ -409,8 +596,7 @@ FunctionEnd
  ;   Call StrStr
  ;   Pop $R0
  ;  ($R0 at this point is "ass string")
-
- Function StrStr
+!MACRO StrStrMacro PREFIX
    Exch $R1 ; st=haystack,old$R1, $R1=needle
    Exch    ; st=old$R1,haystack
    Exch $R2 ; st=old$R1,old$R2, $R2=haystack
@@ -424,19 +610,25 @@ FunctionEnd
    ; $R3=len(needle)
    ; $R4=cnt
    ; $R5=tmp
-   loop:
+   ${PREFIX}loop:
      StrCpy $R5 $R2 $R3 $R4
-     StrCmp $R5 $R1 done
-     StrCmp $R5 "" done
+     StrCmp $R5 $R1 ${PREFIX}done
+     StrCmp $R5 "" ${PREFIX}done
      IntOp $R4 $R4 + 1
-     Goto loop
- done:
+     Goto ${PREFIX}loop
+ ${PREFIX}done:
    StrCpy $R1 $R2 "" $R4
    Pop $R5
    Pop $R4
    Pop $R3
    Pop $R2
    Exch $R1
+!MACROEND
+ Function StrStr
+   !INSERTMACRO StrStrMacro "Install"
+ FunctionEnd 
+ Function un.StrStr
+   !INSERTMACRO StrStrMacro "Uninstall"
  FunctionEnd 
 
 !ENDIF ;AVENCIA_UTILS_IMPORT

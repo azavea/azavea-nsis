@@ -13,15 +13,15 @@
 ; SVC_EXE - The executable the service will run.
 ; SVC_DISPLAY - The user-friendly display name for the service.
 !MACRO CreateAndMaybeStartService SVC_NAME SVC_EXE SVC_DISPLAY
-  DetailPrint "Creating service ${SVC_NAME}..."
-  nsExec::ExecToLog '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
+  !INSERTMACRO AvLog "Creating service ${SVC_NAME}..."
+  !INSERTMACRO AvExec '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
 
   MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
       "Do you want to start the ${SVC_DISPLAY} service now?" \
       IDYES start IDNO dont_start
   start:
-    DetailPrint "Starting service ${SVC_NAME}..."
-    nsExec::ExecToLog '"sc.exe" start ${SVC_NAME}'
+    !INSERTMACRO AvLog "Starting service ${SVC_NAME}..."
+    !INSERTMACRO AvExec '"sc.exe" start ${SVC_NAME}'
   dont_start:
 !MACROEND
 
@@ -38,26 +38,27 @@
   Push $R0
   Push $R1
 
-  DetailPrint "Creating service ${SVC_NAME}..."
-  nsExec::ExecToLog '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
+  !INSERTMACRO AvLog "Creating service ${SVC_NAME}..."
+  !INSERTMACRO AvExec '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
 
   ; If we were given no merge file, skip the merge part and just start the service.
-  StrCmp "${MERGE_FILE}" "" start
-  ; After a fresh install, there are no config files.  Check and see if there is a merge file.
-  FindFirst $R0 $R1 "${MERGE_FILE}"
-  ; If there is a merge file, merge it.
-  StrCmp $R1 "" ask_to_start merge
-  ask_to_start:
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
-      "No merge file found, cannot automatically populate config files. $\n$\n\
-      Do you want to try to start the service anyway (not recommended)?" \
-      IDYES start IDNO dont_start
-  merge:
-    DetailPrint 'Executing command: ${CFG_MERGE_CMD}'
-    nsExec::ExecToLog '${CFG_MERGE_CMD}'
+  ${If} "${MERGE_FILE}" != ""
+    ; After a fresh install, there are no config files.  Check and see if there is a merge file.
+    FindFirst $R0 $R1 "${MERGE_FILE}"
+    ; If there is a merge file, merge it.
+    ${If} $R1 == ""
+      MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
+        "No merge file found, cannot automatically populate config files. $\n$\n\
+        Do you want to try to start the service anyway (not recommended)?" \
+        IDYES start IDNO dont_start
+    ${Else}
+      !INSERTMACRO AvLog 'Executing command: ${CFG_MERGE_CMD}'
+      !INSERTMACRO AvExec '${CFG_MERGE_CMD}'
+    ${EndIF}
+  ${EndIf}
   start:
-    DetailPrint "Starting service ${SVC_NAME}..."
-    nsExec::ExecToLog '"sc.exe" start ${SVC_NAME}'
+    !INSERTMACRO AvLog "Starting service ${SVC_NAME}..."
+    !INSERTMACRO AvExec '"sc.exe" start ${SVC_NAME}'
   dont_start:
 
   Pop $R1
@@ -68,10 +69,10 @@
 ; Stops and deletes the windows service.
 ; SVC_NAME - The unique name of the service.
 !MACRO StopAndDeleteService SVC_NAME
-  DetailPrint "Stopping service ${SVC_NAME}..."
-  nsExec::ExecToLog '"sc.exe" stop ${SVC_NAME}'
-  DetailPrint "Removing service ${SVC_NAME}..."
-  nsExec::ExecToLog '"sc.exe" delete ${SVC_NAME}'
+  !INSERTMACRO AvLog "Stopping service ${SVC_NAME}..."
+  !INSERTMACRO AvExec '"sc.exe" stop ${SVC_NAME}'
+  !INSERTMACRO AvLog "Removing service ${SVC_NAME}..."
+  !INSERTMACRO AvExec '"sc.exe" delete ${SVC_NAME}'
 !MACROEND
 
 !ENDIF ;WIN_SERVICE_UTILS_IMPORT
