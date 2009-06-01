@@ -298,7 +298,7 @@ Function StartupChecks
   ; use $R2 while checking.
   !INSERTMACRO GetCommandOption "/INSTDIR=" $R2
   StrCmp "$R2" "" +2
-    StrCpy $INSTDIR "$R2"
+    StrCpy $INSTDIR $R2
 
   ; This is an ugly hack.  We open the install log but we only close it
   ; if you call AvFail.
