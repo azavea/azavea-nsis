@@ -56,7 +56,7 @@
   ; the first two values are required
   !INSERTMACRO SaveUninstallValue "DisplayName" "$(^Name)$INSTALL_ID"
   !DEFINE UNINSTALLER_FILE "$INSTDIR\Uninstall${APP_NAME}.exe"
-  !INSERTMACRO SaveUninstallValue "UninstallString" "${UNINSTALLER_FILE} /INSTALL_ID=$INSTALL_ID"
+  !INSERTMACRO SaveUninstallValue "UninstallString" '"${UNINSTALLER_FILE}" /INSTALL_ID=$INSTALL_ID'
   ; Icon and other misc info.
   !INSERTMACRO SaveUninstallValue "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
   !INSERTMACRO SaveUninstallValue "Publisher" "Avencia Incorporated"
@@ -360,11 +360,12 @@ Function StartupChecks
     ;Run the uninstaller
     uninst:
       ClearErrors
-      ; R0 contains the uninstaller file, R1 contains the old installed path.
+      ; R0 contains the uninstaller file with any saved params (like the install_id),
+      ; R1 contains the old installed path.
       ${If} ${Silent}
-        !INSERTMACRO AvExecIgnoreErrors '"$R0" /INSTALL_ID=$INSTALL_ID /S _?=$R1'
+        !INSERTMACRO AvExecIgnoreErrors '$R0 /S _?=$R1'
       ${Else}
-        !INSERTMACRO AvExecIgnoreErrors '"$R0" /INSTALL_ID=$INSTALL_ID _?=$R1'
+        !INSERTMACRO AvExecIgnoreErrors '$R0 _?=$R1'
       ${EndIf}
   ${EndIf}
 
