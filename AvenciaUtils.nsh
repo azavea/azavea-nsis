@@ -36,7 +36,7 @@
 ;       meaning to the Add/Remove Programs dialog.
 ; VALUE - The value you'd like saved.
 !MACRO SaveUninstallValue KEY VALUE
-  WriteRegStr HKLM ${UNINST_REG_KEY} "${KEY}" "${VALUE}"
+  WriteRegStr HKLM ${UNINST_REG_KEY} `${KEY}` `${VALUE}`
 !MACROEND
 
 ;------------------------------------------------------------------------------
