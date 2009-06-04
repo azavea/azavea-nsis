@@ -264,7 +264,7 @@
 ; CUSTOM_NAME    - The same name you passed to MergeFileSelectionPageBegin
 ; SELECTED_INDEX - The index (0-based) of the default merge file selection.
 !MACRO InitMergeFileValue CUSTOM_NAME SELECTED_INDEX
-  !INSERTMACRO AvLog "Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
+  !INSERTMACRO AvLog "Initializing merge file dialog ${CUSTOM_NAME} to index ${SELECTED_INDEX}"
   IntOp $${CUSTOM_NAME}_LISTBOX 0 + ${SELECTED_INDEX}
   Call ${CUSTOM_NAME}_default_onChooseMergeFile
   !INSERTMACRO AvLog "Done Initializing merge file dialog ${CUSTOM_NAME} to ${SELECTED_INDEX}"
@@ -332,6 +332,8 @@
     Pop $2
     Pop $1
     Pop $0
+    ; Save the option list for later.
+    StrCpy $InstallLocation_OPTION_LIST ${OPTION_LIST}
   !INSERTMACRO MergeFileSelectionPageEnd "InstallLocation" "false"
 !MACROEND
 
@@ -341,7 +343,51 @@
 ; WHICH_CUSTOMER - One of the values from the semicolon-separated list you passed to 
 ;                  DefaultMergeSelectionPage
 !MACRO InitCustomerValue WHICH_CUSTOMER
-  !INSERTMACRO InitMergeFileValue "InstallLocation" ${WHICH_CUSTOMER}
+  !INSERTMACRO InitVar InstallLocation_SELECTION "${WHICH_CUSTOMER}"
+  !INSERTMACRO AvLog "Initializing merge file to ${WHICH_CUSTOMER}"
+
+  ; Now to find the index of that string.
+  Push $R0    ; This will be the current char index of the options string as we're searching through.
+  Push $R1    ; This will be the length of the selected name.
+  Push $R2    ; This will be the temp string for comparing to the selected name.
+  Push $R3    ; This will be the number of semicolons we found (I.E. the index that we're looking for).
+  Push $R4    ; This is the length of the options string minus the length of the selected name,
+              ; in other words, when $R0 == $R4, we have to give up.
+
+  IntOp $R0 0 + 0
+  StrLen $R1 "${WHICH_CUSTOMER}"
+  IntOp $R3 0 + 0
+  StrLen $R4 "$InstallLocation_OPTION_LIST"
+  IntOp $R4 $R4 - $R0
+  ${While} $R0 < $R4
+    StrCpy $R2 "$InstallLocation_OPTION_LIST" $R1 $R0
+    ${If} "$R2" == "${WHICH_CUSTOMER}"
+      IntOp $R0 $R4 + 1   ; break out of the loop.
+    ${Else}
+      ; Now check for a semicolon.
+      StrCpy $R2 "$InstallLocation_OPTION_LIST" 1 $R0
+      ${If} "$R2" == ";"
+        ; Increment the index counter.
+        IntOp $R3 $R3 + 1
+      ${EndIf}
+      IntOp $R0 $R0 + 1   ; Increment
+    ${EndIf}
+  ${EndWhile}
+  ; Now check, if we found it, we broke out of the loop and $R2 will still be equal
+  ; to WHICH_CUSTOMER.
+  ${If} "$R2" == "${WHICH_CUSTOMER}"
+    !INSERTMACRO AvLog "${WHICH_CUSTOMER} is at index $R3"
+  ${Else}
+    !INSERTMACRO AvFail "${WHICH_CUSTOMER} was not in the list of merge file options: $InstallLocation_OPTION_LIST"
+  ${EndIf}
+
+  !INSERTMACRO InitMergeFileValue "InstallLocation" $R3
+
+  Pop $R4
+  Pop $R3
+  Pop $R2
+  Pop $R1
+  Pop $R0
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
