@@ -136,6 +136,40 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; If you need to pick up additional merge files from somewhere else,
+; use this macro followed by SimpleInstall_MergesToTokens INSTEAD OF
+; SimpleInstall_ConfigToTokens.
+!MACRO SimpleInstall_ConfigToMerges
+    ;merge files
+    !DEFINE MERGE_DIR "$CONFIG_DIR\merge"
+    ; Create the dir.
+    SetOutPath "${MERGE_DIR}"
+    ; Include the defaults.
+    File "defaults\*.mer"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; If you need to pick up additional merge files from somewhere else,
+; use SimpleInstall_ConfigToMerges followed by this macro INSTEAD OF
+; SimpleInstall_ConfigToTokens.
+!MACRO SimpleInstall_MergesToTokens
+    ; Substitute values in the config file.
+    !INSERTMACRO OpenMergeFile "${MERGE_DIR}\install.mer" $0
+
+    !INSERTMACRO AvLog "Using log directory: $LOG_DIR"
+    !INSERTMACRO WriteToken $0 "logdir" "$LOG_DIR"
+    !INSERTMACRO WriteToken $0 "log_dir" "$LOG_DIR"
+
+    !INSERTMACRO AvLog "Using config directory: $CONFIG_DIR"
+    !INSERTMACRO WriteToken $0 "configdir" "$CONFIG_DIR"
+    !INSERTMACRO WriteToken $0 "config_dir" "$CONFIG_DIR"
+
+    !INSERTMACRO AvLog "Using bin directory: $APPLICATION_DIR"
+    !INSERTMACRO WriteToken $0 "exedir" "$APPLICATION_DIR"
+    !INSERTMACRO WriteToken $0 "exe_dir" "$APPLICATION_DIR"
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; The next macro in the "SimpleInstall" series.
 ; See the description of BeginSimpleInstall for example usage.
 ;
