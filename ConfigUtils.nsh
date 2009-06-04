@@ -280,6 +280,7 @@
 ; OPTION_LIST    - A semicolon-separated string listing the options.
 ; ON_CHOOSE_FUNC - The function to call after the user selects where they're installing.
 !MACRO DefaultMergeSelectionPage OPTION_LIST ON_CHOOSE_FUNC
+  !DEFINE DEFAULT_MERGE_OPTION_LIST "${OPTION_LIST}"
   ; Ask which defaults to use, DOT or Avencia
   !INSERTMACRO MergeFileSelectionPageBegin "InstallLocation" "Default Values" "Which default values should we use?" "Select an install location:" "${ON_CHOOSE_FUNC}"
     ; The OPTION_LIST variable has a semicolon-separated list of names, so we need
@@ -357,15 +358,15 @@
   IntOp $R0 0 + 0
   StrLen $R1 "${WHICH_CUSTOMER}"
   IntOp $R3 0 + 0
-  StrLen $R4 "$InstallLocation_OPTION_LIST"
+  StrLen $R4 "${DEFAULT_MERGE_OPTION_LIST}"
   IntOp $R4 $R4 - $R0
   ${While} $R0 < $R4
-    StrCpy $R2 "$InstallLocation_OPTION_LIST" $R1 $R0
+    StrCpy $R2 "${DEFAULT_MERGE_OPTION_LIST}" $R1 $R0
     ${If} "$R2" == "${WHICH_CUSTOMER}"
       IntOp $R0 $R4 + 1   ; break out of the loop.
     ${Else}
       ; Now check for a semicolon.
-      StrCpy $R2 "$InstallLocation_OPTION_LIST" 1 $R0
+      StrCpy $R2 "${DEFAULT_MERGE_OPTION_LIST}" 1 $R0
       ${If} "$R2" == ";"
         ; Increment the index counter.
         IntOp $R3 $R3 + 1
@@ -378,7 +379,7 @@
   ${If} "$R2" == "${WHICH_CUSTOMER}"
     !INSERTMACRO AvLog "${WHICH_CUSTOMER} is at index $R3"
   ${Else}
-    !INSERTMACRO AvFail "${WHICH_CUSTOMER} was not in the list of merge file options: $InstallLocation_OPTION_LIST"
+    !INSERTMACRO AvFail "${WHICH_CUSTOMER} was not in the list of merge file options: ${DEFAULT_MERGE_OPTION_LIST}"
   ${EndIf}
 
   !INSERTMACRO InitMergeFileValue "InstallLocation" $R3
