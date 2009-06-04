@@ -382,6 +382,11 @@
     !INSERTMACRO AvFail "$InstallLocation_SELECTION was not in the list of merge file options: ${DEFAULT_MERGE_OPTION_LIST}"
   ${EndIf}
 
+  ${If} ${Silent}
+    ; If this is a silent install, the pages never get constructed, and the option list has never been
+    ; set.  So set it here.
+    StrCpy $InstallLocation_OPTION_LIST "${DEFAULT_MERGE_OPTION_LIST}"
+  ${EndIf}
   !INSERTMACRO InitMergeFileValue "InstallLocation" $R3
 
   Pop $R4
