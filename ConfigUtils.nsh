@@ -345,7 +345,7 @@
 ;                  DefaultMergeSelectionPage
 !MACRO InitCustomerValue WHICH_CUSTOMER
   !INSERTMACRO InitVar InstallLocation_SELECTION "${WHICH_CUSTOMER}"
-  !INSERTMACRO AvLog "Initializing merge file to ${WHICH_CUSTOMER}"
+  !INSERTMACRO AvLog "Initializing merge file to $InstallLocation_SELECTION"
 
   ; Now to find the index of that string.
   Push $R0    ; This will be the current char index of the options string as we're searching through.
@@ -356,13 +356,13 @@
               ; in other words, when $R0 == $R4, we have to give up.
 
   IntOp $R0 0 + 0
-  StrLen $R1 "${WHICH_CUSTOMER}"
+  StrLen $R1 "$InstallLocation_SELECTION"
   IntOp $R3 0 + 0
   StrLen $R4 "${DEFAULT_MERGE_OPTION_LIST}"
   IntOp $R4 $R4 - $R0
   ${While} $R0 < $R4
     StrCpy $R2 "${DEFAULT_MERGE_OPTION_LIST}" $R1 $R0
-    ${If} "$R2" == "${WHICH_CUSTOMER}"
+    ${If} "$R2" == "$InstallLocation_SELECTION"
       IntOp $R0 $R4 + 1   ; break out of the loop.
     ${Else}
       ; Now check for a semicolon.
@@ -376,10 +376,10 @@
   ${EndWhile}
   ; Now check, if we found it, we broke out of the loop and $R2 will still be equal
   ; to WHICH_CUSTOMER.
-  ${If} "$R2" == "${WHICH_CUSTOMER}"
-    !INSERTMACRO AvLog "${WHICH_CUSTOMER} is at index $R3"
+  ${If} "$R2" == "$InstallLocation_SELECTION"
+    !INSERTMACRO AvLog "$InstallLocation_SELECTION is at index $R3"
   ${Else}
-    !INSERTMACRO AvFail "${WHICH_CUSTOMER} was not in the list of merge file options: ${DEFAULT_MERGE_OPTION_LIST}"
+    !INSERTMACRO AvFail "$InstallLocation_SELECTION was not in the list of merge file options: ${DEFAULT_MERGE_OPTION_LIST}"
   ${EndIf}
 
   !INSERTMACRO InitMergeFileValue "InstallLocation" $R3
