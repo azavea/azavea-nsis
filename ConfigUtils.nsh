@@ -167,48 +167,46 @@
     Push $1    ; Has how many options we have yet to go.
     Push $2    ; The current character we're looking at while looking for semicolons.
     Push $3    ; The total length of the option list.
-    Push $5    ; The index of the beginning of the selected text.
-    Push $6    ; The length of the selected text.
+    Push $6    ; The selected text, we'll accumulate it as we iterate over the list.
 
     StrLen $3 "$${CUSTOM_NAME}_OPTION_LIST"
+    ; Initialize the string char counter to 0.
     IntOp $0 0 + 0
+    ; Initialize the number of words to go to the index of the listbox
     IntOp $1 0 + $${CUSTOM_NAME}_LISTBOX
-    ${CUSTOM_NAME}_find_name_beginning: ; this is a label
-      ; If we don't need to move any more words, we're done.
-      IntCmp $1 0 ${CUSTOM_NAME}_found_name_beginning ${CUSTOM_NAME}_found_name_beginning
-      ; If we hit the end of the string, we're done.
-      IntCmp $0 $3 ${CUSTOM_NAME}_found_name_beginning 0 ${CUSTOM_NAME}_found_name_beginning
-        StrCpy $2 "$${CUSTOM_NAME}_OPTION_LIST" 1 $0
-        StrCmp $2 ";" 0 +2
-          IntOp $1 $1 - 1     ; We found a semicolon, so we're on the next word
-          IntOp $0 $0 + 1     ; Either way we want to move to the next index.
-        Goto ${CUSTOM_NAME}_find_name_beginning ; Loop again.
-    ${CUSTOM_NAME}_found_name_beginning: ; this is a label
-    IntOp $5 $0 + 0    ; Save the beginning index in $5.
-
-    IntOp $6 0 + 0    ; Start out assuming length is zero.
-    ${CUSTOM_NAME}_find_name_ending: ; this is a label
-      ; If we hit the end of the string, we're done.
-      IntCmp $0 $3 ${CUSTOM_NAME}_found_name_ending 0 ${CUSTOM_NAME}_found_name_ending
-      ; Check for a semicolon.
+    ; Initialize the word to ""
+    StrCpy $6 ""
+    ${While} $0 < $3
+      ; Put the char at this index into $2.
       StrCpy $2 "$${CUSTOM_NAME}_OPTION_LIST" 1 $0
-      ; If it's a semicolon, we're done.
-      StrCmp $2 ";" ${CUSTOM_NAME}_found_name_ending 0
-        IntOp $6 $6 + 1     ; Not a semicolon, increase the length by one.
-        IntOp $0 $0 + 1     ; Also we want to move to the next index.
-      Goto ${CUSTOM_NAME}_find_name_ending ; Loop again.
-    ${CUSTOM_NAME}_found_name_ending: ; this is a label
+      ${If} $2 == ";"
+        ; If $1 = 0, that means we have no words left to go, and we
+        ; just found a semicolon, so this is our word.
+        ${If} $1 <= 0
+          ; Just break out of the loop.
+          IntOp $0 $3 + 1
+        ${Else}
+          ; If we still have words left to go, we still just found
+          ; a semicolon (meaning the end of the previous word) so
+          ; decrement the number-left-to-go
+          IntOp $1 $1 - 1
+        ${EndIf}
+      ${Else}
+        ; If we're in here, that means we found a character that wasn't a semicolon.
+        ${If} $1 <= 0
+          ; If we're on the right word now (no words left to go) then
+          ; add this character to the word.
+          StrCpy $6 "$6$2"
+        ${EndIf}
+      ${Endif}
+      ; Increment the character counter.
+      IntOp $0 $0 + 1
+    ${EndWhile}
 
-    IntCmp $0 $3 ${CUSTOM_NAME}_setting_blank_str ${CUSTOM_NAME}_setting_real_str ${CUSTOM_NAME}_setting_blank_str
-    ${CUSTOM_NAME}_setting_blank_str: ; this is a label
-      ; If the "start" index is after the end of the string, use ""
-      StrCpy $${CUSTOM_NAME}_SELECTION ""
-      Goto ${CUSTOM_NAME}_done_setting_str ; Loop again.
-    ${CUSTOM_NAME}_setting_real_str: ; this is a label
-      ; Otherwise, copy a chunk of the string.
-      StrCpy $${CUSTOM_NAME}_SELECTION "$${CUSTOM_NAME}_OPTION_LIST" $6 $5
-      Goto ${CUSTOM_NAME}_done_setting_str ; Loop again.
-    ${CUSTOM_NAME}_done_setting_str: ; this is a label
+    ; So, by the time we got here, we should have the selected word in $6.
+    ; If by some chance the index is greater than the number of words in the
+    ; string, $6 will be equal to "".
+    StrCpy $${CUSTOM_NAME}_SELECTION "$6"
 
     ; Now call the user function if there is one.
     !If "${ON_CHOOSE_FUNC}" != ""
@@ -217,7 +215,6 @@
     !INSERTMACRO AvLog "Selection: $${CUSTOM_NAME}_SELECTION";
 
     Pop $6
-    Pop $5
     Pop $3
     Pop $2
     Pop $1
@@ -300,13 +297,21 @@
     find_end_of_option_name:
       ; If we hit the end of the string, we're done.
       IntCmp $0 $3 found_end_of_option_name 0 found_end_of_option_name
+      ${If} $0 >= $3 
+        goto found_end_of_option_name
+      ${Else}
         ; Check for a semicolon.
         StrCpy $2 "${OPTION_LIST}" 1 $0
         ; If it's a semicolon, we're done.
         StrCmp $2 ";" found_end_of_option_name 0
+        ${If} $2 == ";"
+          goto found_end_of_option_name
+        ${Else}
           IntOp $6 $6 + 1     ; Not a semicolon, increase the length by one.
           IntOp $0 $0 + 1     ; Also we want to move to the next index.
+        ${EndIf}
         Goto find_end_of_option_name    ; Loop again.
+      ${EndIf}
 
     found_end_of_option_name:
       IntCmp $6 0 decide_if_any_left decide_if_any_left 0
