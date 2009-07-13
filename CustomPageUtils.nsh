@@ -105,7 +105,6 @@
 ; CUSTOM_HEADER - The text in the title bar of the custom page.
 ; CUSTOM_MESSAGE - The more detailed text in the top section of the page.
 ; ON_ENTER_FUNC - The function to call when entering the page.  May be "".
-; ON_LEAVE_FUNC - The function to call when leaving the page.  May be "".
 !MACRO EasyCustomPageWithPreBegin CUSTOM_NAME CUSTOM_HEADER CUSTOM_MESSAGE ON_ENTER_FUNC
   !INSERTMACRO EasyCustomPageWithPrePostBegin "${CUSTOM_NAME}" "${CUSTOM_HEADER}" "${CUSTOM_MESSAGE}" "${ON_ENTER_FUNC}" ""
 !MACROEND

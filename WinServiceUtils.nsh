@@ -13,8 +13,28 @@
 ; SVC_EXE - The executable the service will run.
 ; SVC_DISPLAY - The user-friendly display name for the service.
 !MACRO CreateAndMaybeStartService SVC_NAME SVC_EXE SVC_DISPLAY
+  !INSERTMACRO CreateAndMaybeStartServiceAsUser "${SVC_NAME}" "${SVC_EXE}" "${SVC_DISPLAY}" "" ""
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Creates the windows service to run under the specified user. 
+; Pops up a message box asking the user if they
+; would like to start the service now.
+;
+; SVC_NAME - The unique name of the service.
+; SVC_EXE - The executable the service will run.
+; SVC_DISPLAY - The user-friendly display name for the service.
+; SVC_USER - The user to run the service as.  If blank, will default to the
+;            local system user.
+; SVC_PASSWORD - The password for that user.  If user is blank, this may be blank
+;                as well.
+!MACRO CreateAndMaybeStartServiceAsUser SVC_NAME SVC_EXE SVC_DISPLAY SVC_USER SVC_PASSWORD
   !INSERTMACRO AvLog "Creating service ${SVC_NAME}..."
-  !INSERTMACRO AvExec '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
+  ${If} "${SVC_USER}" == ""
+    !INSERTMACRO AvExec '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}"'
+  ${Else}
+    !INSERTMACRO AvExec '"sc.exe" create ${SVC_NAME} start= auto binpath= "${SVC_EXE}" DisplayName= "${SVC_DISPLAY}" obj= "${SVC_USER}" password= "${SVC_PASSWORD}"'
+  ${EndIf}
 
   MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
       "Do you want to start the ${SVC_DISPLAY} service now?" \
