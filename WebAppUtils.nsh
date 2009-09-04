@@ -86,6 +86,7 @@
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm
+    File /nonfatal /r ${SOURCE}\*.html
     File /nonfatal /r ${SOURCE}\*.xml
     SetOutPath ${DEST_REAL}\images
     File /nonfatal ${SOURCE}\images\*
