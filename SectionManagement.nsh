@@ -15,12 +15,12 @@
 ;
 ;    ${SelectSection} ${SECTION_ID}
 
-!define SF_USELECTED  0
-!define SF_SELECTED   1
-!define SF_SECGRP     2
-!define SF_BOLD       8
-!define SF_RO         16
-!define SF_EXPAND     32
+;!define SF_USELECTED  0
+;!define SF_SELECTED   1
+;!define SF_SECGRP     2
+;!define SF_BOLD       8
+;!define SF_RO         16
+;!define SF_EXPAND     32
 ###############################
  
 !macro SecSelect SecId
