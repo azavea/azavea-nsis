@@ -23,7 +23,7 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebSite SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  Section "WebSite_${DISPLAY_NAME}"
+  Section "WebSite_${DISPLAY_NAME}" "WebSite_${DISPLAY_NAME}"
 
     SetOutPath ${DEST_REAL}
     ; Copy all files except .pdb debug files and web.config (because the web.config in the
@@ -48,7 +48,7 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebApplication SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  Section "Web_${DISPLAY_NAME}"
+  Section "Web_${DISPLAY_NAME}" "Web_${DISPLAY_NAME}"
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm
@@ -82,7 +82,7 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebService SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  Section "Web_${DISPLAY_NAME}"
+  Section "Web_${DISPLAY_NAME}" "Web_${DISPLAY_NAME}"
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm
