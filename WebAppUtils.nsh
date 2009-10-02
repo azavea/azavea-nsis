@@ -159,7 +159,9 @@
   Section "un.Web_${DISPLAY_NAME}"
     Push $1
     !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}" $1
-    !INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+    ${If} "$1" != ""
+      !INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+    ${EndIf}
     Pop $1
 
     ; Remove the real directory
