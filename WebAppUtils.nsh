@@ -23,7 +23,7 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebSite SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  Section "WebSite_${DISPLAY_NAME}" "WebSite_${DISPLAY_NAME}"
+  Section "WebSite_${DISPLAY_NAME}"
 
     SetOutPath ${DEST_REAL}
     ; Copy all files except .pdb debug files and web.config (because the web.config in the
@@ -48,7 +48,25 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebApplication SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  Section "Web_${DISPLAY_NAME}" "Web_${DISPLAY_NAME}"
+  !INSERTMACRO WebServiceWithSecID "${SOURCE}" "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Call this macro to create web folders for the "old-style" "Web Application" type of project.
+; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
+; or additional install steps that you will have to take care of in your specific installer.
+; 
+; SOURCE       - The source directory to get files from.  I.E. ..\csharp\My.Project.Web
+; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC  - The default document, such as "default.aspx".
+; WEB_CONFIG   - The location/name (at install time) of the fully token-swapped Web.config file.
+;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
+;                to the correct location/name: $DEST_REAL\Web.config
+; SEC_ID_DEF   - The name of the macro to define containing the section ID.
+!MACRO WebApplicationWithSecID SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
+  Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm
@@ -82,7 +100,25 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebService SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  Section "Web_${DISPLAY_NAME}" "Web_${DISPLAY_NAME}"
+  !INSERTMACRO WebServiceWithSecID "${SOURCE}" "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Call this macro to create web folders for WebService projects.
+; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
+; or additional install steps that you will have to take care of in your specific installer.
+; 
+; SOURCE       - The source directory to get files from.  I.E. ..\csharp\My.Project.WebServices
+; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC  - The default document, such as "default.asmx".
+; WEB_CONFIG   - The location/name (at install time) of the fully token-swapped Web.config file.
+;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
+;                to the correct location/name: $DEST_REAL\Web.config
+; SEC_ID_DEF   - The name of the macro to define containing the section ID.
+!MACRO WebServiceWithSecID SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
+  Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm

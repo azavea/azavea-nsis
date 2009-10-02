@@ -126,10 +126,7 @@
   StrCmp $R0 "" done
     ; Delete the uninstaller file if we know where it was.
     !INSERTMACRO AvLog "Deleting uninstaller file $R0"
-    ; If this uninstaller is being run programatically, a delete on its exe will
-    ; not succeed.  So set /REBOOTOK so that even if we can't delete it now, it'll
-    ; get deleted when we reboot.
-    Delete /REBOOTOK "$R0"
+    Delete "$R0"
   done:
 
   Pop $R0
@@ -289,6 +286,10 @@ Function StartupChecks
   Push $R0
   Push $R1
   Push $R2
+  Push $R3
+  Push $R4
+  Push $R5
+  Push $R6
 
   ; This will check for these variables on the command line.
   !INSERTMACRO InitVar "REINSTALL_OVER" "false"
@@ -362,15 +363,66 @@ Function StartupChecks
       ClearErrors
       ; R0 contains the uninstaller file with any saved params (like the install_id),
       ; R1 contains the old installed path.
-      ${If} ${Silent}
-        !INSERTMACRO AvExecIgnoreErrors '$R0 /S _?=$R1'
-      ${Else}
-        !INSERTMACRO AvExecIgnoreErrors '$R0 _?=$R1'
+
+      ; Step 1: Separate the old parameters from the uninstaller exe.
+      StrCpy $R2 "" ; will be the exe
+      StrCpy $R3 "" ; will be the params.
+
+      StrLen $R4 $R1 ; R4 will be the loop var, start at the end of the installed path.
+      IntOp $R4 $R4 + 1 ; The uninstaller path starts with a ", so skip that.
+      StrCpy $R6 $R0 1 $R4 
+      ${If} "$R6" == "\" ; skip the slash
+        IntOp $R4 $R4 + 1
       ${EndIf}
+         
+      StrLen $R5 $R0 ; Go to the end of the combined string.
+      ${While} $R4 < $R5
+        ; Get the next character
+        StrCpy $R6 $R0 1 $R4 
+        ${If} "$R6" == '"'
+          ; Found a close quote, that means the parameters begin now.
+
+          ; Ignore the close quote and the space after it
+          IntOp $R4 $R4 + 2
+          ; Copy the params (starting where we are to the end of the string)
+          StrCpy $R3 $R0 "" $R4
+          ; Break out of the loop by setting $R4 high
+          IntOp $R4 $R5 + 1
+        ${Else}
+          ; Add the character to the file name.
+          StrCpy $R2 `$R2$R6`
+          ; Go to the next char.
+          IntOp $R4 $R4 + 1
+        ${EndIf}
+      ${EndWhile}
+
+      !INSERTMACRO AvLog "Previous install path: $R1"
+      !INSERTMACRO AvLog "Previous installer exe: $R2"
+      !INSERTMACRO AvLog "Previous installer parameters: $R3"
+
+      ; Step 2: Copy it to a temp directory.
+      CopyFiles /SILENT `$R1\$R2` `$TEMP`
+
+      ; Step 3: Run the uninstaller.
+      ;   R2 contains the uninstaller EXE file name,
+      ;   R3 contains the extra parameters.
+      ;   R1 still contains the old installed path.
+      ${If} ${Silent}
+        !INSERTMACRO AvExecIgnoreErrors '"$TEMP\$R2" $R3 /S _?=$R1'
+      ${Else}
+        !INSERTMACRO AvExecIgnoreErrors '"$TEMP\$R2" $R3 _?=$R1'
+      ${EndIf}
+
+      ; Step 5: Delete the temp copy.
+      Delete `$TEMP\$R2`
   ${EndIf}
 
   continue_install:
   
+  Pop $R6
+  Pop $R5
+  Pop $R4
+  Pop $R3
   Pop $R2
   Pop $R1
   Pop $R0
