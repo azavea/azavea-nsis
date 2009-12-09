@@ -229,9 +229,9 @@
 ;
 ; CUSTOM_NAME     - The same name you passed to MergeFileSelectionPageBegin
 ; FILENAME_OPTION - The option name.  Should be the filename without extension (I.E.
-;                   "Blah" will mean "Blah.mer".  If it ends in "_Test", first
-;                   "Blah.mer" will be used then "Blah.mer", the assumption being that
-;                   test values are mostly the same as the regular ones except with a
+;                   "Blah" will mean "Blah.mer".  If it ends in "_abc", first
+;                   "Blah.mer" will be used then "Blah_abc.mer", the assumption being that
+;                   "Blah_abc.mer" values are mostly the same as the "Blah.mer" ones except with a
 ;                   few overrides.
 !MACRO AddMergeFileOption CUSTOM_NAME FILENAME_OPTION
   StrCpy $${CUSTOM_NAME}_OPTION_LIST "$${CUSTOM_NAME}_OPTION_LIST${FILENAME_OPTION};"
@@ -414,7 +414,7 @@
 ;--------------------------------------------------------------------------------------
 ; Appends 0, 1, or 2 merge file names to the MERGE_FILE_LIST variable.
 ; If no defaults were selected, no names are appended.
-; If a <something>_Test name was selected, both <something>.mer and <something>_Test.mer
+; If a <something>_<somethingelse> name was selected, both <something>.mer and <something>_<somethingelse>.mer
 ; are appended.
 ; Otherwise, just <something>.mer is appended.
 ;
@@ -428,27 +428,43 @@
   ; Append our merge files.
   ${If} $${CUSTOM_NAME}_SELECTION != ""
     ; See if it is a test merge file and we should first append the real one.
+    Push $R6          ; Current char we're checking for underscoreness.
+    Push $R7          ; Index of the current char.
     Push $R8          ; length of the selection.
     Push $R9          ; Working var for pieces of the selection.
 
     StrLen $R8 $${CUSTOM_NAME}_SELECTION
-    ; Skip the "_Test" check if the length is less than or equal to 5.
-    ${If} $R8 > 5
-      ; We're only here if the length was greater than 5.
-      StrCpy $R9 $${CUSTOM_NAME}_SELECTION "" -5   ; Get the last 5 chars into $R9
-      ${If} $R9 == "_Test"
-        IntOp $R8 $R8 - 5
-        StrCpy $R9 $${CUSTOM_NAME}_SELECTION $R8    ; Copy all but the last 5 chars into $R9.
-        ; Now append that name.
-        !INSERTMACRO AvLog "Appending merge file ${MERGE_DIR}\$R9.mer"
-        !INSERTMACRO AppendMergeFile ${MERGE_FILE_LIST} "${MERGE_DIR}\$R9.mer"
-      ${EndIf}
+    ; Skip the underscore check if the length is less than or equal to 2.
+    ${If} $R8 > 2
+      ; Start at 1 (no point in checking the first char for being an underscore)
+      IntOp $R7 1 + 0
+
+      ${While} $R7 < $R8
+        ; Put the current char in R6.
+        StrCpy $R6 $${CUSTOM_NAME}_SELECTION 1 $R7
+        ; Is it an underscore?
+        ${If} $R6 == "_"
+          ; Get the previous part of the name.
+          StrCpy $R9 $${CUSTOM_NAME}_SELECTION $R7    ; Copy all but the last 5 chars into $R9.
+          ; And append it as a merge file if it exists.
+          ${If} ${FileExists} "${MERGE_DIR}\$R9.mer"
+            !INSERTMACRO AvLog "Appending merge file ${MERGE_DIR}\$R9.mer"
+            !INSERTMACRO AppendMergeFile ${MERGE_FILE_LIST} "${MERGE_DIR}\$R9.mer"
+          ${Else}
+            !INSERTMACRO AvLog "Not appending merge file ${MERGE_DIR}\$R9.mer because it doesn't exist."
+          ${EndIf}
+        ${EndIf}
+        ; Increment the index.
+        IntOp $R7 $R7 + 1
+      ${EndWhile}
     ${EndIf}
 
     !INSERTMACRO AvLog "Appending merge file ${MERGE_DIR}\$${CUSTOM_NAME}_SELECTION.mer"
     !INSERTMACRO AppendMergeFile ${MERGE_FILE_LIST} "${MERGE_DIR}\$${CUSTOM_NAME}_SELECTION.mer"
     Pop $R9
     Pop $R8
+    Pop $R7
+    Pop $R6
   ${EndIf}
 !MACROEND
 
