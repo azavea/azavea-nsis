@@ -4,6 +4,9 @@
 !IFNDEF If
   !INCLUDE "LogicLib.nsh"
 !ENDIF
+!IFNDEF BUILD_NUMBER
+  !DEFINE BUILD_NUMBER "ManualBuild"
+!ENDIF
 
 ;------------------------------------------------------------------------------
 ; NSIS doesn't provide any way of sending output to the user at all.
@@ -60,15 +63,22 @@
   ; Icon and other misc info.
   !INSERTMACRO SaveUninstallValue "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
   !INSERTMACRO SaveUninstallValue "Publisher" "Avencia Incorporated"
+  !INSERTMACRO SaveUninstallValue "HelpLink" "http://www.avencia.com/info/contact.aspx"
+  !INSERTMACRO SaveUninstallValue "HelpTelephone" "215-925-2600"
+  !INSERTMACRO SaveUninstallValue "URLInfoAbout" "http://www.avencia.com"
+
   !INSERTMACRO SaveUninstallValue "NoModify" "1"
   !INSERTMACRO SaveUninstallValue "NoRepair" "1"
   !INSERTMACRO SaveUninstallValue "InstallLocation" "$INSTDIR"
 
   !IFDEF APP_MAJOR_VERSION
     !INSERTMACRO SaveUninstallValue "VersionMajor" "${APP_MAJOR_VERSION}"
-  !ENDIF
-  !IFDEF APP_MINOR_VERSION
-    !INSERTMACRO SaveUninstallValue "VersionMinor" "${APP_MAJOR_VERSION}"
+    !IFDEF APP_MINOR_VERSION
+      !INSERTMACRO SaveUninstallValue "VersionMinor" "${APP_MINOR_VERSION}"
+      !INSERTMACRO SaveUninstallValue "DisplayVersion" "${APP_MAJOR_VERSION}.${APP_MINOR_VERSION} (${BUILD_NUMBER})"
+    !ELSE
+      !INSERTMACRO SaveUninstallValue "DisplayVersion" "${APP_MAJOR_VERSION} (${BUILD_NUMBER})"
+    !ENDIF
   !ENDIF
 
   ; Create an uninstaller.

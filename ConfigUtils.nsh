@@ -103,6 +103,7 @@
   Push $0
 
   !INSERTMACRO OpenMergeFile "${STD_SWAP_TO_DIR}\install.mer" $0
+  !INSERTMACRO WriteToken $0 "BuildNumber" "${BUILD_NUMBER}"
   !INSERTMACRO WriteToken $0 "logdir" $LOG_DIR
   !INSERTMACRO WriteToken $0 "configdir" $CONFIG_DIR
   !INSERTMACRO CloseMergeFile $0
