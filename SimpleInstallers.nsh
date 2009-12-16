@@ -122,6 +122,9 @@
     ; Substitute values in the config file.
     !INSERTMACRO OpenMergeFile "${MERGE_DIR}\install.mer" $0
 
+    !INSERTMACRO AvLog "Build number: ${BUILD_NUMBER}"
+    !INSERTMACRO WriteToken $0 "BuildNumber" "${BUILD_NUMBER}"
+
     !INSERTMACRO AvLog "Using log directory: $LOG_DIR"
     !INSERTMACRO WriteToken $0 "logdir" "$LOG_DIR"
     !INSERTMACRO WriteToken $0 "log_dir" "$LOG_DIR"
