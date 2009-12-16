@@ -49,8 +49,8 @@
   OutFile "${APP_NAME}Setup.exe"
   InstallDir "${DEFAULT_INST_DIR}"
 
-  !DEFINE APP_MAJOR_VERSION "0"
-  !DEFINE APP_MINOR_VERSION "1"
+  !DEFINE APP_MAJOR_VERSION "${MAJOR_VER}"
+  !DEFINE APP_MINOR_VERSION "${MINOR_VER}"
 
   !INCLUDE "AvenciaUtils.nsh"
   !INCLUDE "ConfigUtils.nsh"
