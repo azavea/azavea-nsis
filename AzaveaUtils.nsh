@@ -1,6 +1,6 @@
 ;c-style prevention of duplicate imports.
-!IFNDEF AVENCIA_UTILS_IMPORT
-!DEFINE AVENCIA_UTILS_IMPORT "yup"
+!IFNDEF AZAVEA_UTILS_IMPORT
+!DEFINE AZAVEA_UTILS_IMPORT "yup"
 !IFNDEF If
   !INCLUDE "LogicLib.nsh"
 !ENDIF
@@ -52,7 +52,7 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
-;icon is a filename, like "avencia16.ico"
+;icon is a filename, like "azavea16.ico"
 ;path is a path NOT ending in a "\".
 !MACRO SaveStandardUninstallInfo ADDREMOVE_ICON ICON_PATH
   ; Show us in add/remove programs
@@ -62,10 +62,10 @@
   !INSERTMACRO SaveUninstallValue "UninstallString" '"${UNINSTALLER_FILE}" /INSTALL_ID=$INSTALL_ID'
   ; Icon and other misc info.
   !INSERTMACRO SaveUninstallValue "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
-  !INSERTMACRO SaveUninstallValue "Publisher" "Avencia Incorporated"
-  !INSERTMACRO SaveUninstallValue "HelpLink" "http://www.avencia.com/info/contact.aspx"
+  !INSERTMACRO SaveUninstallValue "Publisher" "Azavea Incorporated"
+  !INSERTMACRO SaveUninstallValue "HelpLink" "http://www.azavea.com/info/contact.aspx"
   !INSERTMACRO SaveUninstallValue "HelpTelephone" "215-925-2600"
-  !INSERTMACRO SaveUninstallValue "URLInfoAbout" "http://www.avencia.com"
+  !INSERTMACRO SaveUninstallValue "URLInfoAbout" "http://www.azavea.com"
 
   !INSERTMACRO SaveUninstallValue "NoModify" "1"
   !INSERTMACRO SaveUninstallValue "NoRepair" "1"
@@ -694,4 +694,4 @@ FunctionEnd
    !INSERTMACRO StrStrMacro "Uninstall"
  FunctionEnd 
 
-!ENDIF ;AVENCIA_UTILS_IMPORT
+!ENDIF ;AZAVEA_UTILS_IMPORT

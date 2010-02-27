@@ -34,8 +34,8 @@
 !MACRO IncludeMerginator WHERE
   !DEFINE MERGINATOR_DIR "${WHERE}"
   SetOutPath ${MERGINATOR_DIR}
-  File externals\Avencia.Tools.Merginator\*.exe
-  File externals\Avencia.Tools.Merginator\*.dll
+  File externals\Azavea.Tools.Merginator\*.exe
+  File externals\Azavea.Tools.Merginator\*.dll
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -73,7 +73,7 @@
     StrCpy $7 "-c"
   ${EndIf}
   ; Run the Merginator
-  StrCpy $8 '"${MERGINATOR_DIR}\Avencia.Tools.Merginator.UI.exe" ${INPUT_MERS} -mo "${OUTPUT_MER}" -t "${TEMPL_DIR}" -d "${DEST_DIR}" $7'
+  StrCpy $8 '"${MERGINATOR_DIR}\Azavea.Tools.Merginator.UI.exe" ${INPUT_MERS} -mo "${OUTPUT_MER}" -t "${TEMPL_DIR}" -d "${DEST_DIR}" $7'
   !INSERTMACRO AvLog "Executing the Merginator"
   !INSERTMACRO AvExec '$8'
   Pop $7
@@ -272,14 +272,14 @@
 ; Prompts the user for which set of values to use (I.E. which merge file to use).
 ;
 ; Examples of how to call this:
-;   !INSERTMACRO DefaultMergeSelectionPage "DOT;DOT_Test;Avencia;Avencia_Test" ""
-;   !INSERTMACRO DefaultMergeSelectionPage "DOT;DOT_Test;Avencia;Avencia_Test" "someFunction"
+;   !INSERTMACRO DefaultMergeSelectionPage "DOT;DOT_Test;Azavea;Azavea_Test" ""
+;   !INSERTMACRO DefaultMergeSelectionPage "DOT;DOT_Test;Azavea;Azavea_Test" "someFunction"
 ;
 ; OPTION_LIST    - A semicolon-separated string listing the options.
 ; ON_CHOOSE_FUNC - The function to call after the user selects where they're installing.
 !MACRO DefaultMergeSelectionPage OPTION_LIST ON_CHOOSE_FUNC
   !DEFINE DEFAULT_MERGE_OPTION_LIST "${OPTION_LIST}"
-  ; Ask which defaults to use, DOT or Avencia
+  ; Ask which defaults to use, DOT or Azavea
   !INSERTMACRO MergeFileSelectionPageBegin "InstallLocation" "Default Values" "Which default values should we use?" "Select an install location:" "${ON_CHOOSE_FUNC}"
     ; The OPTION_LIST variable has a semicolon-separated list of names, so we need
     ; to iterate over them inserting each one.

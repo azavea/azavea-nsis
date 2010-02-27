@@ -13,7 +13,7 @@
 ;
 ;   !INCLUDE "SimplerInstallers.nsh"
 ;
-;   ${BeginSimpleInstall} "Test Thing To Install" "TestThing" "Avencia;Avencia_Test"
+;   ${BeginSimpleInstall} "Test Thing To Install" "TestThing" "Azavea;Azavea_Test"
 ;     <some other pages>
 ;   ${SimpleInstall_PagesToInit}
 ;     File ..\config\templates\TestThing.config
@@ -32,7 +32,7 @@
 ;
 ; NICE_NAME - The pretty name to display to the user.
 ; DEFAULT_MERGE_OPTIONS - The semicolon-separated list of merge file names
-;                         for the user to choose between, I.E. "Avencia;DOT;DOT_Test"
+;                         for the user to choose between, I.E. "Azavea;DOT;DOT_Test"
 !MACRO SimpleInstall_ToPages NICE_NAME DEFAULT_MERGE_OPTIONS
   !INSERTMACRO SimpleInstall_ToPages_WithDetails "${NICE_NAME}" "${DEFAULT_MERGE_OPTIONS}" 0 1 "" "C:\projects\${APP_NAME}"
 !MACROEND
@@ -52,7 +52,7 @@
   !DEFINE APP_MAJOR_VERSION "${MAJOR_VER}"
   !DEFINE APP_MINOR_VERSION "${MINOR_VER}"
 
-  !INCLUDE "AvenciaUtils.nsh"
+  !INCLUDE "AzaveaUtils.nsh"
   !INCLUDE "ConfigUtils.nsh"
   !INCLUDE "StandardQuestions.nsh"
   !INCLUDE "MUI.nsh"
@@ -97,7 +97,7 @@
   FunctionEnd
 
   Section "Install Basics"
-    !INSERTMACRO SaveStandardUninstallInfo "avencia16.ico" "externals\Avencia_Common"
+    !INSERTMACRO SaveStandardUninstallInfo "azavea16.ico" "externals\Azavea_Common"
   SectionEnd
 
   !INSERTMACRO StandardLogFileSection $LOG_DIR

@@ -3,7 +3,7 @@
 !DEFINE VIRTUAL_DIR_IMPORT "yup"
 
 ; Includes this for doing the virtual directory creation/deletion.
-!INCLUDE "AvenciaUtils.nsh"
+!INCLUDE "AzaveaUtils.nsh"
 
 
 ;------------------------------------------------------------------------------
