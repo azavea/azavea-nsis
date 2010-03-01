@@ -62,7 +62,7 @@
   !INSERTMACRO SaveUninstallValue "UninstallString" '"${UNINSTALLER_FILE}" /INSTALL_ID=$INSTALL_ID'
   ; Icon and other misc info.
   !INSERTMACRO SaveUninstallValue "DisplayIcon" "$INSTDIR\${ADDREMOVE_ICON}"
-  !INSERTMACRO SaveUninstallValue "Publisher" "Azavea Incorporated"
+  !INSERTMACRO SaveUninstallValue "Publisher" "Azavea Inc."
   !INSERTMACRO SaveUninstallValue "HelpLink" "http://www.azavea.com/info/contact.aspx"
   !INSERTMACRO SaveUninstallValue "HelpTelephone" "215-925-2600"
   !INSERTMACRO SaveUninstallValue "URLInfoAbout" "http://www.azavea.com"
