@@ -97,7 +97,7 @@
   FunctionEnd
 
   Section "Install Basics"
-    !INSERTMACRO SaveStandardUninstallInfo "azavea16.ico" "externals\Azavea_Common"
+    !INSERTMACRO SaveStandardUninstallInfo "azavea_icon_lg.ico" "externals\Azavea_Common"
   SectionEnd
 
   !INSERTMACRO StandardLogFileSection $LOG_DIR

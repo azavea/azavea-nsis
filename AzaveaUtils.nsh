@@ -52,7 +52,7 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
-;icon is a filename, like "azavea16.ico"
+;icon is a filename, like "azavea_icon_lg.ico"
 ;path is a path NOT ending in a "\".
 !MACRO SaveStandardUninstallInfo ADDREMOVE_ICON ICON_PATH
   ; Show us in add/remove programs
