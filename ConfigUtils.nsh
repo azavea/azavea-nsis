@@ -222,7 +222,7 @@
     Pop $0
   FunctionEnd
   !INSERTMACRO EasyCustomPageWithPostBegin "${CUSTOM_NAME}" "${CUSTOM_HEADER}" "${CUSTOM_MESSAGE}" ${CUSTOM_NAME}_default_onChooseMergeFile
-    !INSERTMACRO EasyCustomListBox "${CUSTOM_NAME}_LISTBOX" "${LIST_BOX_PROMPT}" 27
+    !INSERTMACRO EasyCustomListBox "${CUSTOM_NAME}_LISTBOX" "${LIST_BOX_PROMPT}" 67
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
