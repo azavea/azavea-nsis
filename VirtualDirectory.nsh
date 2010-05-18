@@ -7,6 +7,21 @@
 
 
 ;------------------------------------------------------------------------------
+; Set permissions for all of the ASP users, including ASPNET, NETWORK SERVICE, 
+; and the mysterious IUSR account.
+; 
+; DIRECTORY  - The directory on which to grant a specific permission, I.E. $APPLICATION_DIR\log
+; PERMISSION - The Permission to grant, I.E. "R" or "W"
+!MACRO SetASPPermissions DIRECTORY PERMISSION
+  ; Create the virtual directory
+  !INSERTMACRO SetPermissions "${DIRECTORY}" "ASPNET" "${PERMISSION}"
+  !INSERTMACRO SetPermissions "${DIRECTORY}" "NETWORK SERVICE" "${PERMISSION}"
+  Call GetIUSRAccount
+  !INSERTMACRO AvLog "IUSR Account = $IUSR_ACCT_USERNAME"
+  !INSERTMACRO SetPermissions "${DIRECTORY}" "$IUSR_ACCT_USERNAME" "${PERMISSION}"
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; This macro is easier than calling the function, plus it handles the permissions
 ; (well, almost).
 ; 
@@ -21,11 +36,7 @@
   StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
   StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
   Call CreateVDir
-  !INSERTMACRO SetPermissions "${DEST_REAL}" "ASPNET" "R"
-  !INSERTMACRO SetPermissions "${DEST_REAL}" "NETWORK SERVICE" "R"
-  Call GetIUSRAccount
-  !INSERTMACRO AvLog "IUSR Account = $IUSR_ACCT_USERNAME"
-  !INSERTMACRO SetPermissions "${DEST_REAL}" "$IUSR_ACCT_USERNAME" "R"
+  !INSERTMACRO SetASPPermissions "${DEST_REAL}" "R"
 !MACROEND
 
 ;------------------------------------------------------------------------------

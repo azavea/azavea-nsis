@@ -516,6 +516,27 @@ FunctionEnd
 !MACROEND
 
 
+;------------------------------------------------------------------------------
+; This macro revokes all existing permissions that the "USER" has for the 
+; file/directory "PATH".
+; PATH: The file or directory, a trailing slash is optional for directories.
+; USER: The user, must be known to the machine (this won't make up new users).
+!MACRO RemovePermissions PATH USER
+  Push $R0
+  Push $R1
+
+  StrCpy $R1 "${PATH}"
+
+  ; Check if the PATH has a slash, if so we'll need to chop it off.
+  StrCpy $R0 $R1 1 -1 ;take 1 chars starting 1 from the end of VALUE, put in R2
+  StrCmp $R0 "\" 0 +2 ;if the last char = \, need to truncate.
+    StrCpy $R1 $R1 -1 ; truncate
+
+  !INSERTMACRO AvExec '"cacls.exe" "$R1" /T /E /R "${USER}"'
+  Pop $R1
+  Pop $R0
+!MACROEND
+
 ;
 ; The following functions have been copied wholesale from the appendix in the
 ; NSIS manual, under the section "Useful Scripts"
