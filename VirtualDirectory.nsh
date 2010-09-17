@@ -4,6 +4,7 @@
 
 ; Includes this for doing the virtual directory creation/deletion.
 !INCLUDE "AzaveaUtils.nsh"
+!DEFINE IIS7APPCMD "$%windir%\system32\inetsrv\AppCmd.exe"
 
 
 ;------------------------------------------------------------------------------
@@ -13,7 +14,6 @@
 ; DIRECTORY  - The directory on which to grant a specific permission, I.E. $APPLICATION_DIR\log
 ; PERMISSION - The Permission to grant, I.E. "R" or "W"
 !MACRO SetASPPermissions DIRECTORY PERMISSION
-  ; Create the virtual directory
   !INSERTMACRO SetPermissions "${DIRECTORY}" "ASPNET" "${PERMISSION}"
   !INSERTMACRO SetPermissions "${DIRECTORY}" "NETWORK SERVICE" "${PERMISSION}"
   Call GetIUSRAccount
@@ -31,11 +31,20 @@
 ; DEFAULT_DOC  - The default document, such as "default.asmx".
 !MACRO CreateVirtualDir DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC
   ; Create the virtual directory
-  StrCpy $CVDIR_VIRTUAL_NAME "${DEST_VIRT}"
-  StrCpy $CVDIR_REAL_PATH "${DEST_REAL}"
-  StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
-  StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
-  Call CreateVDir
+  !INSERTMACRO AvLog "Checking for ${IIS7APPCMD} (IIS 7+)..."
+  ${If} ${FileExists} "${IIS7APPCMD}"
+    ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
+    !INSERTMACRO AvLog "Created IIS 7+ virtual directory '${DEST_VIRT}' as '${DEST_REAL}'..."
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" ADD SITE /name:${DEST_VIRT} "/physicalPath:${DEST_REAL}"'
+    !INSERTMACRO AvLog "Successfully created IIS 7+ virtual directory"
+  ${Else}
+    ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
+    StrCpy $CVDIR_VIRTUAL_NAME "${DEST_VIRT}"
+    StrCpy $CVDIR_REAL_PATH "${DEST_REAL}"
+    StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
+    StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
+    Call CreateVDir
+  ${EndIf}
   !INSERTMACRO SetASPPermissions "${DEST_REAL}" "R"
 !MACROEND
 
@@ -46,9 +55,18 @@
 ; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
 !MACRO DeleteVirtualDir DEST_VIRT DISPLAY_NAME
   ; Remove the virtual directory
-  StrCpy $DVDIR_VIRTUAL_NAME "${DEST_VIRT}"
-  StrCpy $DVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
-  Call un.DeleteVDir
+  !INSERTMACRO AvLog "Checking for ${IIS7APPCMD} (IIS 7+)..."
+  ${If} ${FileExists} "${IIS7APPCMD}"
+    ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
+    !INSERTMACRO AvLog "Deleting IIS 7+ virtual directory '${DEST_VIRT}'..."
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE SITE ${DEST_VIRT}'
+    !INSERTMACRO AvLog "Successfully deleted IIS 7+ virtual directory"
+  ${Else}
+    ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
+    StrCpy $DVDIR_VIRTUAL_NAME "${DEST_VIRT}"
+    StrCpy $DVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
+    Call un.DeleteVDir
+  ${EndIf}
 !MACROEND
 
 ;--------------------------------
