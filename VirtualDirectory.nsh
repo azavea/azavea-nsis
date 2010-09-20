@@ -14,16 +14,22 @@
 ; DIRECTORY  - The directory on which to grant a specific permission, I.E. $APPLICATION_DIR\log
 ; PERMISSION - The Permission to grant, I.E. "R" or "W"
 !MACRO SetASPPermissions DIRECTORY PERMISSION
-  !INSERTMACRO SetPermissions "${DIRECTORY}" "ASPNET" "${PERMISSION}"
-  !INSERTMACRO SetPermissions "${DIRECTORY}" "NETWORK SERVICE" "${PERMISSION}"
-  Call GetIUSRAccount
-  !INSERTMACRO AvLog "IUSR Account = $IUSR_ACCT_USERNAME"
-  !INSERTMACRO SetPermissions "${DIRECTORY}" "$IUSR_ACCT_USERNAME" "${PERMISSION}"
+  ${If} ${FileExists} "${IIS7APPCMD}"
+    ; IIS 7 and/or Windows 7 use a group called "IIS_IUSRS" rather than a single
+	; named account.
+	!INSERTMACRO SetPermissions "${DIRECTORY}" "IIS_IUSRS" "${PERMISSION}"
+  ${Else}
+	!INSERTMACRO SetPermissions "${DIRECTORY}" "ASPNET" "${PERMISSION}"
+	!INSERTMACRO SetPermissions "${DIRECTORY}" "NETWORK SERVICE" "${PERMISSION}"
+	Call GetIUSRAccount
+	!INSERTMACRO AvLog "IUSR Account = $IUSR_ACCT_USERNAME"
+	!INSERTMACRO SetPermissions "${DIRECTORY}" "$IUSR_ACCT_USERNAME" "${PERMISSION}"
+  ${EndIf}
 !MACROEND
 
 ;------------------------------------------------------------------------------
 ; This macro is easier than calling the function, plus it handles the permissions
-; (well, almost).
+; (for XP / Server 2003 anyway, Server 2008_2 is still under development).
 ; 
 ; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
 ; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
@@ -35,7 +41,7 @@
   ${If} ${FileExists} "${IIS7APPCMD}"
     ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
     !INSERTMACRO AvLog "Created IIS 7+ virtual directory '${DEST_VIRT}' as '${DEST_REAL}'..."
-    !INSERTMACRO AvExec '"${IIS7APPCMD}" ADD SITE /name:${DEST_VIRT} "/physicalPath:${DEST_REAL}"'
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" ADD APP "/site.name:Default Web Site" /path:/${DEST_VIRT} "/physicalPath:${DEST_REAL}"'
     !INSERTMACRO AvLog "Successfully created IIS 7+ virtual directory"
   ${Else}
     ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
@@ -59,7 +65,7 @@
   ${If} ${FileExists} "${IIS7APPCMD}"
     ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
     !INSERTMACRO AvLog "Deleting IIS 7+ virtual directory '${DEST_VIRT}'..."
-    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE SITE ${DEST_VIRT}'
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE APP ${DEST_VIRT}'
     !INSERTMACRO AvLog "Successfully deleted IIS 7+ virtual directory"
   ${Else}
     ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
