@@ -16,7 +16,7 @@
 ;
 ; TASKER_DEST_DIR - The directory where the tasker application will be installed to.
 ; TASKER_SRC_DIR - The directory where the tasker application was compiled.
-; CONFIG_DIR - The directory where the Azavea.Utilities.Tasker.exe.config file
+; CONFIG_DIR - The directory where the Azavea.Tasker.Service.exe.config file
 ;              is located (typically it will have been placed there by TokenSwap).
 ; SERVICE_NAME - The unique name of the windows service to create (No spaces).
 !MACRO TaskerSections TASKER_DEST_DIR TASKER_SRC_DIR CONFIG_DIR SERVICE_NAME
@@ -30,10 +30,10 @@
     File ${TASKER_SRC_DIR}\*exe
   
     ; Move the app.config file from the config folder (where it was tokenswapped) to the tasker app folder
-    Rename ${CONFIG_DIR}\Azavea.Utilities.Tasker.exe.config ${TASKER_DEST_DIR}\Azavea.Utilities.Tasker.exe.config
+    Rename ${CONFIG_DIR}\Azavea.Tasker.Service.exe.config ${TASKER_DEST_DIR}\Azavea.Tasker.Service.exe.config
   
     !INSERTMACRO AvLog "Creating Azavea Tasker service for ${APP_NAME}..."
-    !INSERTMACRO CreateAndMaybeStartService ${SERVICE_NAME} "${TASKER_DEST_DIR}\Azavea.Utilities.Tasker.exe" "Azavea Tasker Utility for ${APP_NAME}"
+    !INSERTMACRO CreateAndMaybeStartService ${SERVICE_NAME} "${TASKER_DEST_DIR}\Azavea.Tasker.Service.exe" "Azavea Tasker Utility for ${APP_NAME}"
   SectionEnd
 
   Section "un.Tasker Windows Service"
