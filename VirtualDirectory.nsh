@@ -65,7 +65,7 @@
   ${If} ${FileExists} "${IIS7APPCMD}"
     ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
     !INSERTMACRO AvLog "Deleting IIS 7+ virtual directory '${DEST_VIRT}'..."
-    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE APP ${DEST_VIRT}'
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE APP "Default Web Site/${DEST_VIRT}"'
     !INSERTMACRO AvLog "Successfully deleted IIS 7+ virtual directory"
   ${Else}
     ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
