@@ -84,10 +84,12 @@ Var CVDIR_DEFAULT_DOC
 Function CreateVDir
 Push $0
 Push $1 
+Push $2
 !INSERTMACRO AvLog "Creating virtual directory '$CVDIR_VIRTUAL_NAME' at '$CVDIR_REAL_PATH'";
 ;Open a VBScript File in the temp dir for writing
-!INSERTMACRO AvLog "Creating $TEMP\createVDir.vbs";
-FileOpen $0 "$TEMP\createVDir.vbs" w
+GetTempFileName $2
+!INSERTMACRO AvLog "Creating $TEMP\$2.vbs";
+FileOpen $0 "$TEMP\$2.vbs" w
  
 ;Write the script:
 ;Create a virtual dir named $CVDIR_VIRTUAL_NAME pointing to $CVDIR_REAL_PATH with proper attributes
@@ -163,10 +165,11 @@ FileWrite $0 "End If$\n"
  
 FileClose $0
  
-!INSERTMACRO AvExec '"$SYSDIR\cscript.exe" "$TEMP\createVDir.vbs"'
+!INSERTMACRO AvExec '"$SYSDIR\cscript.exe" "$TEMP\$2.vbs"'
 !INSERTMACRO AvLog "Successfully created IIS virtual directory"
-Delete "$TEMP\createVDir.vbs"
+Delete "$TEMP\$2.vbs"
  
+Pop $2
 Pop $1
 Pop $0
 FunctionEnd
@@ -174,10 +177,12 @@ FunctionEnd
 Var IUSR_ACCT_USERNAME
 Function GetIUSRAccount
 	!INSERTMACRO AvLog "Getting IIS Anonymous Username"
-	!INSERTMACRO AvLog "Creating $TEMP\iisAnon.vbs"
 	; Save the old value of $0 on the stack.
 	Push $0
-	FileOpen $0 "$TEMP\iisAnon.vbs" w
+	Push $1
+	GetTempFileName $1
+	!INSERTMACRO AvLog "Creating $TEMP\$1.vbs"
+	FileOpen $0 "$TEMP\$1.vbs" w
 	
 	FileWrite $0 "Function AnonymousUser()$\n"
 	FileWrite $0 "Dim FullPath, IISObj, IISObj1$\n"
@@ -207,12 +212,13 @@ Function GetIUSRAccount
 
 	FileClose $0
 	
-	!INSERTMACRO AvExecIntoVariable '"$SYSDIR\cscript.exe" //Nologo "$TEMP\iisAnon.vbs"' $IUSR_ACCT_USERNAME
+	!INSERTMACRO AvExecIntoVariable '"$SYSDIR\cscript.exe" //Nologo "$TEMP\$1.vbs"' $IUSR_ACCT_USERNAME
 	!INSERTMACRO EnsureEndsWithout $IUSR_ACCT_USERNAME "$\r$\n"
 
 	; Restore the old value of $0
+	Pop $1
 	Pop $0
-	Delete "$TEMP\iisAnon.vbs"
+	Delete "$TEMP\$1.vbs"
 FunctionEnd
  
 ;--------------------------------
@@ -222,10 +228,12 @@ Var DVDIR_PRODUCT_NAME
 Function un.DeleteVDir
 Push $0 
 Push $1
+Push $2
 !INSERTMACRO AvLog "Deleting virtual directory '$DVDIR_VIRTUAL_NAME'";
 ;Open a VBScript File in the temp dir for writing
-!INSERTMACRO AvLog "Creating $TEMP\deleteVDir.vbs";
-FileOpen $0 "$TEMP\deleteVDir.vbs" w
+GetTempFileName $2
+!INSERTMACRO AvLog "Creating $TEMP\$2.vbs";
+FileOpen $0 "$TEMP\$2.vbs" w
  
 ;Write the script:
 ;Remove a virtual dir named $DVDIR_VIRTUAL_NAME
@@ -257,8 +265,9 @@ FileWrite $0 "End If$\n$\n"
  
 FileClose $0
  
-!INSERTMACRO AvExecIgnoreErrors '"$SYSDIR\cscript.exe" "$TEMP\deleteVDir.vbs"'
-Delete "$TEMP\deleteVDir.vbs"
+!INSERTMACRO AvExecIgnoreErrors '"$SYSDIR\cscript.exe" "$TEMP\$2.vbs"'
+Delete "$TEMP\$2.vbs"
+Pop $2
 Pop $1
 Pop $0
 FunctionEnd
