@@ -150,7 +150,9 @@
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
     ; Move the web.config file from wherever it was installed and tokenswapped to the web app folder
-    Rename ${WEB_CONFIG} ${DEST_REAL}\Web.config
+    ${If} "${WEB_CONFIG}" != ""
+      Rename "${WEB_CONFIG}" "${DEST_REAL}\Web.config"
+    ${EndIf}
 
     !INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}" "${DEST_VIRT}"
