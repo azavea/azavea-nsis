@@ -34,8 +34,8 @@
 !MACRO IncludeMerginator WHERE
   !DEFINE MERGINATOR_DIR "${WHERE}"
   SetOutPath ${MERGINATOR_DIR}
-  File externals\Azavea.Tools.Merginator\*.exe
-  File externals\Azavea.Tools.Merginator\*.dll
+  File externals\Merginator\Output\*.exe
+  File externals\Merginator\Output\*.dll
 !MACROEND
 
 ;------------------------------------------------------------------------------
