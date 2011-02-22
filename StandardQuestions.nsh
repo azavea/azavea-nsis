@@ -87,8 +87,12 @@
 ;--------------------------------------------------------------------------------------
 ; Guesses the local host name based on the registry value.
 ; This should be called from the installer's .onInit function.
+; A value passed on the command line will override the registry value.
 !MACRO InitLocalhostName
-  ReadRegStr $LOCALHOST_NAME HKLM "SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+  Push $0
+  ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+  !INSERTMACRO InitVar "LOCALHOST_NAME" $0
+  Pop $0
 !MACROEND
 
 
