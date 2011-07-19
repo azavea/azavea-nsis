@@ -8,6 +8,9 @@
   !DEFINE BUILD_NUMBER "ManualBuild"
 !ENDIF
 
+!IFNDEF DisableX64FSRedirection
+  !INCLUDE "x64.nsh"
+!ENDIF
 ;------------------------------------------------------------------------------
 ; NSIS doesn't provide any way of sending output to the user at all.
 ; The only way to create an install.log file is to RECOMPILE NSIS for
@@ -220,11 +223,9 @@
   Push $0
   Push $1
   !INSERTMACRO AvLog `Executing: ${COMMAND}`
-  nsExec::ExecToStack `${COMMAND}`
-  ; The first thing on the stack should be the return code.
-  Pop $0
-  ; The next thing should be any console output.
-  Pop $1
+    
+  !INSERTMACRO AvExecHelper `${COMMAND}` $1
+ 
   ${If} $0 != 0
     !INSERTMACRO AvFail "ERROR: Exec failed, returned: $0, console output: $1"
   ${Else}
@@ -237,25 +238,57 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; Helper macro used by other exec methods to detect a 64 bit OS and run the
+; command in the correct way. NOTE: Console output is lost when running 
+; on Win64.
+;
+; When running installers on x64 systems, one of the crucial plugins doesn't 
+; function properly. The http://nsis.sourceforge.net/Docs/nsExec/nsExec.txt 
+; NsExec plugin will not run programs in the background. This effects the 
+; following methods in NSIS:
+;
+;    nsExec::Exec
+;    nsExec::ExecToLog
+;    nsExec::ExecToStack
+;
+; Unfortunately, the workaround introduces the ugly DOS window. Not really 
+; a seamless fix, but at least the installer doesn't hang!
+;
+; COMMAND - The command to execute.
+; CONSOLE_OUTPUT_VARIABLE - The variable to put the console output into.
+!MACRO AvExecHelper COMMAND CONSOLE_OUTPUT_VARIABLE
+  ${If} ${RunningX64}
+    ${DisableX64FSRedirection}
+    ; Run 64-bit   
+    ExecWait `${COMMAND}` $0
+    ${EnableX64FSRedirection}
+	StrCpy ${CONSOLE_OUTPUT_VARIABLE} "Unable to capture console output when running applications on 64-bit Windows."
+  ${Else}
+    ; Run 32-bit
+    nsExec::ExecToStack `${COMMAND}`
+    ; The first thing on the stack should be the return code.
+    Pop $0
+    ; The next thing should be any console output.
+    Pop ${CONSOLE_OUTPUT_VARIABLE}	
+  ${EndIf}
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; Call this instead of calling nsExec directly so that the output is correctly
 ; logged either to the details page or to the install log.  This signature
 ; allows access to the console output from the command.
 ;
 ; COMMAND - The command to execute.
-; VARIABLE - The variable to put the console output into.
-!MACRO AvExecIntoVariable COMMAND VARIABLE
+; CONSOLE_OUTPUT_VARIABLE - The variable to put the console output into.
+!MACRO AvExecIntoVariable COMMAND CONSOLE_OUTPUT_VARIABLE
   Push $0
   !INSERTMACRO AvLog `Executing: ${COMMAND}`
-  nsExec::ExecToStack `${COMMAND}`
-  ; The first thing on the stack should be the return code.
-  Pop $0
-  ; The next thing should be any console output.
-  Pop ${VARIABLE}
+  !INSERTMACRO AvExecHelper `${COMMAND}` ${CONSOLE_OUTPUT_VARIABLE}
   ${If} $0 != 0
-    !INSERTMACRO AvFail "ERROR: Exec failed, returned: $0, console output: ${VARIABLE}"
+    !INSERTMACRO AvFail "ERROR: Exec failed, returned: $0, console output: ${CONSOLE_OUTPUT_VARIABLE}"
   ${Else}
     !INSERTMACRO AvLog "Exec returned: $0"
-    !INSERTMACRO AvLog "Exec Console Output: ${VARIABLE}"
+    !INSERTMACRO AvLog "Exec Console Output: ${CONSOLE_OUTPUT_VARIABLE}"
   ${EndIf}
   ; Now restore the original value of $0.
   Pop $0
@@ -268,10 +301,9 @@
 ; COMMAND - The command to execute.
 !MACRO AvExecIgnoreErrors COMMAND
   Push $0
-  !INSERTMACRO AvLog `Executing: ${COMMAND}`
-  nsExec::ExecToStack `${COMMAND}`
-  ; The first thing on the stack should be the return code.
-  Pop $0
+  Push $1
+  !INSERTMACRO AvLog `Executing: ${COMMAND}`  
+  !INSERTMACRO AvExecHelper `${COMMAND}` $1
   ${If} $0 != 0
     !INSERTMACRO AvLog "Exec failed, returned: $0, but continuing anyway."
   ${Else}
@@ -281,6 +313,7 @@
   Pop $0
   !INSERTMACRO AvLog "Exec Console Output: $0"
   ; Now restore the original value of $0.
+  Pop $1
   Pop $0
 !MACROEND
 
