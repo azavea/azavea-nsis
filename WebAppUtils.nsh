@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -83,7 +83,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -133,14 +133,15 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
-; This is an internal macro used by the WebXXX macros for the common code.
-; Those various macros copy the specific files, this takes care of the Web.Config,
-; the virtual directories, and the uninstall section.
+; Call this macro to create web folders for RESTService projects.
+; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
+; or additional install steps that you will have to take care of in your specific installer.
 ; 
+; SOURCE       - The source directory to get files from.  I.E. ..\csharp\My.Project.WebServices
 ; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
 ; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
 ; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
@@ -148,13 +149,51 @@
 ; WEB_CONFIG   - The location/name (at install time) of the fully token-swapped Web.config file.
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
-!MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
+!MACRO RESTService SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
+	Section "REST_${DISPLAY_NAME}"
+		SetOutPath ${DEST_REAL}
+		File ${SOURCE}\Global.asax
+		SetOutPath ${DEST_REAL}\Views
+		File ${SOURCE}\Views\Web.config ; Internal Web.config for ASP.NET MVC Views. There is also a 'normal' Web.config file.
+		File /r ${SOURCE}\Views\*.cshtml
+		SetOutPath ${DEST_REAL}\Content
+		File /r ${SOURCE}\Content\*.html
+		SetOutPath ${DEST_REAL}\bin
+		File ${SOURCE}\bin\*.dll
+	
+	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; This is an internal macro used by the WebXXX macros for the common code.
+; Those various macros copy the specific files, this takes care of the Web.Config,
+; the virtual directories, and the uninstall section.
+; 
+; DEST_REAL       - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT       - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME    - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC     - The default document, such as "default.asmx".
+; WEB_CONFIG      - The location/name (at install time) of the fully token-swapped Web.config file.
+;                   I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
+;                   to the correct location/name: $DEST_REAL\Web.config
+; SUPPLEMENTARY   - Is this being installed into the same directory as something else
+!MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY
     ; Move the web.config file from wherever it was installed and tokenswapped to the web app folder
-    ${If} "${WEB_CONFIG}" != ""
-      Rename "${WEB_CONFIG}" "${DEST_REAL}\Web.config"
+    ${If} "${WEB_CONFIG}" != ""		
+	
+		; NSIS won't overwrite a file when the replacement file doesn't have a later date
+		; so delete the existing Web.config file if this is a supplementary app.
+		${If} "${SUPPLEMENTARY}" != ""
+			Delete "${DEST_REAL}\Web.config"
+		${EndIf}
+		Rename "${WEB_CONFIG}" "${DEST_REAL}\Web.config"
     ${EndIf}
 
-    !INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
+	; If this isn't a supplementary project (i.e. REST services installed into same directory as SOAP)
+	; then we need to create the virtual directory.
+	${If} "${SUPPLEMENTARY}" == ""
+		!INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
+	${EndIf}
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}" "${DEST_VIRT}"
   SectionEnd
 
@@ -162,7 +201,9 @@
     Push $1
     !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}" $1
     ${If} "$1" != ""
-      !INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+		${If} "${SUPPLEMENTARY}" == ""
+			!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+		${EndIf}
     ${EndIf}
     Pop $1
 
