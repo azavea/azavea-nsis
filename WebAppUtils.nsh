@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -83,7 +83,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -133,7 +133,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -161,7 +161,7 @@
 		SetOutPath ${DEST_REAL}\bin
 		File ${SOURCE}\bin\*.dll
 	
-	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes"
+	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes" "4"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -177,7 +177,7 @@
 ;                   I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                   to the correct location/name: $DEST_REAL\Web.config
 ; SUPPLEMENTARY   - Is this being installed into the same directory as something else
-!MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY
+!MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY DOTNETVER
     ; Move the web.config file from wherever it was installed and tokenswapped to the web app folder
     ${If} "${WEB_CONFIG}" != ""		
 	
@@ -191,8 +191,12 @@
 
 	; If this isn't a supplementary project (i.e. REST services installed into same directory as SOAP)
 	; then we need to create the virtual directory.
-	${If} "${SUPPLEMENTARY}" == ""
-		!INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
+	${If} "${SUPPLEMENTARY}" != ""
+		${If} "${DOTNETVER}" == "4"
+			!INSERTMACRO CreateVirtualDir4 "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
+		${Else}
+			!INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
+		${EndIf}
 	${EndIf}
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}" "${DEST_VIRT}"
   SectionEnd
