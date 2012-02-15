@@ -189,7 +189,7 @@
 		Rename "${WEB_CONFIG}" "${DEST_REAL}\Web.config"
     ${EndIf}
 
-	; If this isn't a supplementary project (i.e. REST services installed into same directory as SOAP)
+	; If this is the supplementary project (i.e. REST services installed into same directory as SOAP)
 	; then we need to create the virtual directory.
 	${If} "${SUPPLEMENTARY}" != ""
 		${If} "${DOTNETVER}" == "4"
