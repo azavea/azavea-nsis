@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -83,7 +83,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -100,7 +100,22 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 !MACRO WebService SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
-  !INSERTMACRO WebServiceWithSecID "${SOURCE}" "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" ""
+  !INSERTMACRO WebServiceWithSecID "${SOURCE}" "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "yes"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Like WebService but does not create a virtual directory.
+; 
+; SOURCE       - The source directory to get files from.  I.E. ..\csharp\My.Project.WebServices
+; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC  - The default document, such as "default.asmx".
+; WEB_CONFIG   - The location/name (at install time) of the fully token-swapped Web.config file.
+;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
+;                to the correct location/name: $DEST_REAL\Web.config
+!MACRO WebServiceWithoutVirtDir SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
+	!INSERTMACRO WebServiceWithSecID "${SOURCE}" "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -117,7 +132,7 @@
 ;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                to the correct location/name: $DEST_REAL\Web.config
 ; SEC_ID_DEF   - The name of the macro to define containing the section ID.
-!MACRO WebServiceWithSecID SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
+!MACRO WebServiceWithSecID SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF CREATE_VIRT_DIR
   Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
@@ -133,7 +148,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "${CREATE_VIRT_DIR}"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -161,7 +176,7 @@
 		SetOutPath ${DEST_REAL}\bin
 		File ${SOURCE}\bin\*.dll
 	
-	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes" "4"
+	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes" "4" "yes"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -177,7 +192,7 @@
 ;                   I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                   to the correct location/name: $DEST_REAL\Web.config
 ; SUPPLEMENTARY   - Is this being installed into the same directory as something else
-!MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY DOTNETVER
+!MACRO RestOfWebProj DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY DOTNETVER CREATE_VIRT_DIR
     ; Move the web.config file from wherever it was installed and tokenswapped to the web app folder
     ${If} "${WEB_CONFIG}" != ""		
 	
@@ -189,14 +204,16 @@
 		Rename "${WEB_CONFIG}" "${DEST_REAL}\Web.config"
     ${EndIf}
 
-	; If this is the supplementary project (i.e. REST services installed into same directory as SOAP)
+	; If this is the supplementary project (i.e. SOAP services installed into same directory as REST)
 	; then we need to create the virtual directory.
-	${If} "${SUPPLEMENTARY}" != ""
+	${If} "${CREATE_VIRT_DIR}" != ""
 		${If} "${DOTNETVER}" == "4"
 			!INSERTMACRO CreateVirtualDir4 "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
 		${Else}
 			!INSERTMACRO CreateVirtualDir "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}"
 		${EndIf}
+	${Else}
+		
 	${EndIf}
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}" "${DEST_VIRT}"
   SectionEnd
@@ -205,9 +222,7 @@
     Push $1
     !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}" $1
     ${If} "$1" != ""
-		${If} "${SUPPLEMENTARY}" == ""
-			!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
-		${EndIf}
+		!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
     ${EndIf}
     Pop $1
 
