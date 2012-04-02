@@ -87,6 +87,42 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; Call this macro to create web folders for the "old-style" "Web Application" type of project.
+; Same as WebApplicationWithSecID but uses .NET 4
+; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
+; or additional install steps that you will have to take care of in your specific installer.
+; 
+; SOURCE       - The source directory to get files from.  I.E. ..\csharp\My.Project.Web
+; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC  - The default document, such as "default.aspx".
+; WEB_CONFIG   - The location/name (at install time) of the fully token-swapped Web.config file.
+;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
+;                to the correct location/name: $DEST_REAL\Web.config
+; SEC_ID_DEF   - The name of the macro to define containing the section ID.
+!MACRO WebApplicationWithSecID4 SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
+  Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
+    SetOutPath ${DEST_REAL}
+    File /r ${SOURCE}\*.as?x
+    File /nonfatal /r ${SOURCE}\*.htm
+    File /nonfatal /r ${SOURCE}\*.html
+    File /nonfatal /r ${SOURCE}\*.xml
+    File /nonfatal /r ${SOURCE}\*.sitemap
+    File /nonfatal /r ${SOURCE}\*.master
+    SetOutPath ${DEST_REAL}\images
+    File /nonfatal ${SOURCE}\images\*
+    SetOutPath ${DEST_REAL}\styles
+    File /nonfatal ${SOURCE}\styles\*
+    SetOutPath ${DEST_REAL}\js
+    File /nonfatal ${SOURCE}\js\*
+    SetOutPath ${DEST_REAL}\bin
+    File ${SOURCE}\bin\*.dll
+
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes"
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; Call this macro to create web folders for WebService projects.
 ; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
 ; or additional install steps that you will have to take care of in your specific installer.
