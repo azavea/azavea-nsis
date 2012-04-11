@@ -85,6 +85,24 @@
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
+; Prompts the user for the website name
+!MACRO WebsiteNamePage
+  !INSERTMACRO CreateEasyCustomTextVar "WEBSITE_NAME" ""
+  !INSERTMACRO EasyCustomPageBegin "WebsiteName" "Website Name" "Please enter the name of the IIS website"
+    !INSERTMACRO EasyCustomTextBox "WEBSITE_NAME" "Website name:"
+  !INSERTMACRO EasyCustomPageEnd
+!MACROEND
+
+;--------------------------------------------------------------------------------------
+; Prompts the user for the application pool name
+!MACRO AppPoolNamePage
+  !INSERTMACRO CreateEasyCustomTextVar "APP_POOL_NAME" ""
+  !INSERTMACRO EasyCustomPageBegin "AppPoolName" "Application Pool Name" "Please enter the name of the IIS application pool"
+    !INSERTMACRO EasyCustomTextBox "APP_POOL_NAME" "Applicaton pool name:"
+  !INSERTMACRO EasyCustomPageEnd
+!MACROEND
+
+;--------------------------------------------------------------------------------------
 ; Guesses the local host name based on the registry value.
 ; This should be called from the installer's .onInit function.
 ; A value passed on the command line will override the registry value.

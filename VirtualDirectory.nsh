@@ -60,16 +60,31 @@
 ; This version is for builds targeting .NET 4.0/MVC 3
 ; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
 ; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; WEBSITE_NAME - The name of the IIS website to install to. If blank, "Default Web Site" will be used
+; APP_POOL_NAME- The name of the IIS application pool to install to. If blank, "ASP.NET v4.0" will be used
 ; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
 ; DEFAULT_DOC  - The default document, such as "default.asmx".
-!MACRO CreateVirtualDir4 DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC
+Var WEBSITE
+Var APPPOOL
+!MACRO CreateVirtualDir4 DEST_REAL DEST_VIRT WEBSITE_NAME APP_POOL_NAME DISPLAY_NAME DEFAULT_DOC
+  ${If} "${WEBSITE_NAME}" == ""
+        StrCpy $WEBSITE "Default Web Site"
+  ${Else}
+        StrCpy $WEBSITE "${WEBSITE_NAME}"
+  ${EndIf}
+  
+  ${If} "${APP_POOL_NAME}" == ""
+        StrCpy $APPPOOL "ASP.NET v4.0"
+  ${Else}
+        StrCpy $APPPOOL "${APP_POOL_NAME}"
+  ${EndIf}
   ; Create the virtual directory
   !INSERTMACRO AvLog "Checking for ${IIS7APPCMD} (IIS 7+)..."
   ${If} ${FileExists} "${IIS7APPCMD}"
     ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
     !INSERTMACRO AvLog "Created IIS 7+ virtual directory '${DEST_VIRT}' as '${DEST_REAL}'..."
-    !INSERTMACRO AvExec '"${IIS7APPCMD}" ADD APP "/site.name:Default Web Site" /path:/${DEST_VIRT} "/physicalPath:${DEST_REAL}"'
-    !INSERTMACRO AvExec '"${IIS7APPCMD}" SET APP "/app.name:Default Web Site/${DEST_VIRT}" "/applicationPool:ASP.NET v4.0"'
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" ADD APP "/site.name:$WEBSITE" /path:/${DEST_VIRT} "/physicalPath:${DEST_REAL}"'
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" SET APP "/app.name:$WEBSITE/${DEST_VIRT}" "/applicationPool:$APPPOOL"'
     !INSERTMACRO AvLog "Successfully created IIS 7+ virtual directory"
   ${Else}
     ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
@@ -77,7 +92,8 @@
     StrCpy $CVDIR_REAL_PATH "${DEST_REAL}"
     StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
     StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
-    Call CreateVDir4
+    StrCpy $CVDIR_WEBSITE_NAME "$WEBSITE"
+    Call CreateVDirForNamedWebsite
   ${EndIf}
   !INSERTMACRO SetASPPermissions "${DEST_REAL}" "R"
 !MACROEND
@@ -296,6 +312,130 @@ FileClose $0
 !INSERTMACRO AvLog "Successfully created IIS virtual directory"
 Delete "$2.vbs"
  
+Pop $2
+Pop $1
+Pop $0
+FunctionEnd
+
+;------------------------------------
+; CreateVDir Function for ASP.NET 4.0
+;Var CVDIR_VIRTUAL_NAME
+;Var CVDIR_REAL_PATH
+;Var CVDIR_PRODUCT_NAME
+;Var CVDIR_DEFAULT_DOC
+Var CVDIR_WEBSITE_NAME
+Function CreateVDirForNamedWebsite
+Push $0
+Push $1
+Push $2
+!INSERTMACRO AvLog "Creating virtual directory '$CVDIR_VIRTUAL_NAME' at '$CVDIR_REAL_PATH'";
+;Open a VBScript File in the temp dir for writing
+GetTempFileName $2
+!INSERTMACRO AvLog "Creating $2.vbs";
+FileOpen $0 "$2.vbs" w
+
+;Write the script:
+;Create a virtual dir named $CVDIR_VIRTUAL_NAME pointing to $CVDIR_REAL_PATH with proper attributes
+
+; If we're not installing to Default Web Site, add a function to look up the site number
+${If} $CVDIR_WEBSITE_NAME != ""
+       FileWrite $0 "Function LookupSiteNumber(siteName)$\n"
+       FileWrite $0 "  Set IIS = GetObject($\"IIS://localhost/w3svc$\")$\n"
+       FileWrite $0 "  For Each Web in IIS$\n"
+       FileWrite $0 "    If (Web.Class = $\"IIsWebServer$\") Then$\n"
+       FileWrite $0 "      For Each Site in Web$\n"
+       FileWrite $0 "        If (Site.Name = $\"ROOT$\") Then$\n"
+       FileWrite $0 "          Set IISWebSite = GetObject($\"IIS://localhost/w3svc/$\" & Web.Name)$\n"
+       FileWrite $0 "          If (IISWebSite.ServerComment = siteName) Then$\n"
+       FileWrite $0 "            LookupSiteNumber = Web.Name$\n"
+       FileWrite $0 "          End If$\n"
+       FileWrite $0 "        End If$\n"
+       FileWrite $0 "      Next$\n"
+       FileWrite $0 "    End If$\n"
+       FileWrite $0 "  Next$\n"
+       FileWrite $0 "End Function$\n"
+${EndIf}
+
+FileWrite $0 "On Error Resume Next$\n"
+${If} $CVDIR_WEBSITE_NAME == ""
+       FileWrite $0 "Set Root = GetObject($\"IIS://LocalHost/W3SVC/1/root$\")$\n"
+${Else}
+       FileWrite $0 "Set Root = GetObject($\"IIS://LocalHost/W3SVC/$\"+LookupSiteNumber($\"$CVDIR_WEBSITE_NAME$\")+$\"/root$\")$\n"
+${EndIf}
+FileWrite $0 "Set Dir = Root.Create($\"IIsWebVirtualDir$\", $\"$CVDIR_VIRTUAL_NAME$\")$\n"
+FileWrite $0 "If (Err.Number <> 0) Then$\n"
+FileWrite $0 "  If (Err.Number <> -2147024713) Then$\n"
+FileWrite $0 "    message = $\"Error $\" & Err.Number$\n"
+FileWrite $0 "    message = message & $\" trying to create IIS virtual directory.$\" & chr(13)$\n"
+FileWrite $0 "    message = message & $\"Please check your IIS settings (inetmgr).$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
+FileWrite $0 "    WScript.Quit (Err.Number)$\n"
+FileWrite $0 "  End If$\n"
+FileWrite $0 "  ' Error -2147024713 means that the virtual directory already exists.$\n"
+FileWrite $0 "  ' We will check if the parameters are the same: if so, then OK.$\n"
+FileWrite $0 "  ' If not, then fail and display a message box.$\n"
+FileWrite $0 "  Set Dir = GetObject($\"IIS://LocalHost/W3SVC/1781027468/root/$CVDIR_VIRTUAL_NAME$\")$\n"
+FileWrite $0 "  If (Dir.Path <> $\"$CVDIR_REAL_PATH$\") Then$\n"
+FileWrite $0 "    message = $\"Virtual Directory $CVDIR_VIRTUAL_NAME already exists pointing at a different folder ($\" + Dir.Path + $\").$\" + chr(13)$\n"
+FileWrite $0 "    message = message + $\"Please delete the virtual directory using the IIS console (inetmgr), and install again.$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
+FileWrite $0 "    Wscript.Quit (Err.Number)$\n"
+FileWrite $0 "  End If$\n"
+FileWrite $0 "  If (Dir.AspAllowSessionState <> True  Or  Dir.AccessScript <> True) Then$\n"
+FileWrite $0 "    message = $\"Virtual Directory $CVDIR_VIRTUAL_NAME already exists and has incompatible parameters.$\" + chr(13)$\n"
+FileWrite $0 "    message = message + $\"Please delete the virtual directory using the IIS console (inetmgr), and install again.$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 "    MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
+FileWrite $0 "    Wscript.Quit (Err.Number)$\n"
+FileWrite $0 "  End If$\n"
+FileWrite $0 "  Wscript.Quit (0)$\n"
+FileWrite $0 "End If$\n"
+FileWrite $0 "Dir.Path = $\"$CVDIR_REAL_PATH$\"$\n"
+FileWrite $0 "Dir.AccessRead = True$\n"
+FileWrite $0 "Dir.AccessWrite = False$\n"
+FileWrite $0 "Dir.AccessScript = True$\n"
+FileWrite $0 "Dir.AppFriendlyName = $\"$CVDIR_VIRTUAL_NAME$\"$\n"
+FileWrite $0 "Dir.EnableDirBrowsing = False$\n"
+FileWrite $0 "Dir.ContentIndexed = False$\n"
+FileWrite $0 "Dir.DontLog = True$\n"
+FileWrite $0 "Dir.EnableDefaultDoc = True$\n"
+FileWrite $0 "Dir.DefaultDoc = $\"$CVDIR_DEFAULT_DOC$\"$\n"
+FileWrite $0 "Dir.AspBufferingOn = True$\n"
+FileWrite $0 "Dir.AspAllowSessionState = True$\n"
+FileWrite $0 "Dir.AspSessionTimeout = 30$\n"
+FileWrite $0 "Dir.AspScriptTimeout = 900$\n"
+FileWrite $0 "Dir.SetInfo$\n"
+FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/1781027468/root/$CVDIR_VIRTUAL_NAME$\")$\n"
+FileWrite $0 "IISObject.AppCreate2(2) 'Create a process-pooled web application$\n"
+FileWrite $0 "If (Err.Number <> 0) Then$\n"
+FileWrite $0 " message = $\"Error $\" & Err.Number$\n"
+FileWrite $0 " message = message & $\" trying to create the virtual directory at 'IIS://LocalHost/W3SVC/1781027468/root/$CVDIR_VIRTUAL_NAME'$\" & chr(13)$\n"
+FileWrite $0 " message = message & $\"Please check your IIS settings (inetmgr).$\"$\n"
+${If} ${Silent}
+  FileWrite $0 "    WScript.Echo message$\n"
+${Else}
+  FileWrite $0 " MsgBox message, vbCritical, $\"$CVDIR_PRODUCT_NAME$\"$\n"
+${EndIf}
+FileWrite $0 " WScript.Quit (Err.Number)$\n"
+FileWrite $0 "End If$\n"
+
+FileClose $0
+
+!INSERTMACRO AvExec '"$SYSDIR\cscript.exe" "$2.vbs"'
+!INSERTMACRO AvLog "Successfully created IIS virtual directory"
+Delete "$2.vbs"
+
 Pop $2
 Pop $1
 Pop $0
