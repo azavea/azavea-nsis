@@ -2,7 +2,7 @@
 !IFNDEF WEBAPP_UTILS_IMPORT
 !DEFINE WEBAPP_UTILS_IMPORT "yup"
 
-; This contains a utility functions related to installing web applications.
+; This contains utility functions related to installing web applications.
 
 ; Includes this for doing the virtual directory creation/deletion.
 !INCLUDE "VirtualDirectory.nsh"
@@ -303,4 +303,110 @@
     RmDir /r "${DEST_REAL}"
   SectionEnd
 !MACROEND
+
+;--------------------------------
+; Enable .ashx files in the Default Web Site to receive HTTP DELETE requests
+!MACRO EnableHttpDeleteForDefaultWebsite DEST_VIRT
+              !INSERTMACRO EnableHttpDelete "Default Web Site" "${DEST_VIRT}"
+!MACROEND
+
+;--------------------------------
+; Enable .ashx files in the specified website to receive HTTP DELETE requests
+!MACRO EnableHttpDelete WEBSITE_NAME DEST_VIRT
+       Section "Enable_Http_Delete"
+              StrCpy $WAUTIL_WEBSITE_NAME "${WEBSITE_NAME}"
+              StrCpy $WAUTIL_DEST_VIRT "${DEST_VIRT}"
+              Call EnableHttpDelete
+       SectionEnd
+!MACROEND
+
+;--------------------------------
+; EnableHttpDelete Function
+Var WAUTIL_WEBSITE_NAME
+Var WAUTIL_DEST_VIRT
+Function EnableHttpDelete
+        Push $0
+        Push $1
+
+        GetTempFileName $1
+        FileOpen $0 "$1.vbs" "w"
+
+        FileWrite $0 "On Error Resume Next$\n"
+        FileWrite $0 "Function LookupSiteNumber(siteName)$\r$\n"
+        FileWrite $0 "	Set IIS = GetObject($\"IIS://localhost/w3svc$\")$\r$\n"
+        
+        FileWrite $0 "  If Err.Number <> 0 Then$\n"
+        FileWrite $0 "        message = $\"Error $\" & Err.Number$\n"
+        FileWrite $0 "        message = message & $\" accessing IIS server.$\" & chr(13)$\n"
+        FileWrite $0 "        message = message & $\"Please check your IIS settings (inetmgr).$\"$\n"
+        ${If} ${Silent}
+          FileWrite $0 "      WScript.Echo message$\n"
+        ${Else}
+          FileWrite $0 "      MsgBox message, vbCritical$\n"
+        ${EndIf}
+        FileWrite $0 "        WScript.Quit (Err.Number)$\n"
+        FileWrite $0 "   End If$\n"
+
+        FileWrite $0 "	For Each Web in IIS$\r$\n"
+        FileWrite $0 "		If (Web.Class = $\"IIsWebServer$\") Then$\r$\n"
+        FileWrite $0 "			For Each Site in Web$\r$\n"
+        FileWrite $0 "				If (Site.Name = $\"ROOT$\") Then$\r$\n"
+        FileWrite $0 "					Set IISWebSite = GetObject($\"IIS://localhost/w3svc/$\" & Web.Name)$\r$\n"
+        FileWrite $0 "					If (IISWebSite.ServerComment = siteName) Then$\r$\n"
+        FileWrite $0 "						LookupSiteNumber = Web.Name$\r$\n"
+        FileWrite $0 "					End If$\r$\n"
+        FileWrite $0 "				End If$\r$\n"
+        FileWrite $0 "			Next$\r$\n"
+        FileWrite $0 "		End If$\r$\n"
+        FileWrite $0 "	Next$\r$\n"
+        FileWrite $0 "End Function$\r$\n"
+
+        FileWrite $0 "Function StartsWith(str, searchStr)$\r$\n"
+        FileWrite $0 "	Dim firstToken$\r$\n"
+        FileWrite $0 "	firstToken = Left(str, InStr(str, $\",$\")-1)$\r$\n"
+        FileWrite $0 "	If firstToken = searchStr Then$\r$\n"
+        FileWrite $0 "		StartsWith = true$\r$\n"
+        FileWrite $0 "	Else$\r$\n"
+        FileWrite $0 "		StartsWith = false$\r$\n"
+        FileWrite $0 "	End If$\r$\n"
+        FileWrite $0 "End Function$\r$\n"
+
+        FileWrite $0 "Dim siteNumber$\r$\n"
+        FileWrite $0 "siteNumber = LookupSiteNumber($\"$WAUTIL_WEBSITE_NAME$\")$\r$\n"
+
+        FileWrite $0 "Set website = GetObject($\"IIS://localhost/w3svc/$\" + siteNumber + $\"/ROOT/$WAUTIL_DEST_VIRT$\")$\r$\n"
+        FileWrite $0 "Dim scriptMappings$\r$\n"
+        FileWrite $0 "scriptMappings = website.ScriptMaps$\r$\n"
+
+        FileWrite $0 "If Err.Number <> 0 Then$\n"
+        FileWrite $0 "      message = $\"Error $\" & Err.Number$\n"
+        FileWrite $0 "      message = message & $\" accessing application extension mappings.$\" & chr(13)$\n"
+        FileWrite $0 "      message = message & $\"Please check your IIS settings (inetmgr).$\"$\n"
+        ${If} ${Silent}
+          FileWrite $0 "    WScript.Echo message$\n"
+        ${Else}
+          FileWrite $0 "    MsgBox message, vbCritical$\n"
+        ${EndIf}
+        FileWrite $0 "      WScript.Quit (Err.Number)$\n"
+        FileWrite $0 "End If$\n"
+
+        FileWrite $0 "For i = 0 To UBound(scriptMappings)$\r$\n"
+        FileWrite $0 "	If StartsWith(scriptMappings(i), $\".ashx$\") Then$\r$\n"
+        FileWrite $0 "		scriptMappings(i) = scriptMappings(i) & $\",DELETE$\"$\r$\n"
+        FileWrite $0 "	End If$\r$\n"
+        FileWrite $0 "Next$\r$\n"
+
+        FileWrite $0 "website.Put $\"ScriptMaps$\", scriptMappings$\r$\n"
+        FileWrite $0 "website.SetInfo$\r$\n"
+
+        FileClose $0
+
+        !INSERTMACRO AvExec '"$SYSDIR\cscript.exe" "$1.vbs"'
+
+        Delete "$1.vbs"
+
+        Pop $1
+        Pop $0
+FunctionEnd
+
 !ENDIF ;WEBAPP_UTILS_IMPORT
