@@ -487,7 +487,7 @@ Function GetIUSRAccount
 	Pop $0
 	Delete "$1.vbs"
 FunctionEnd
- 
+
 ;--------------------------------
 ; DeleteVDir Function
 Var DVDIR_VIRTUAL_NAME
