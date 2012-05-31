@@ -255,6 +255,20 @@
 	${EndIf}
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}" "${DEST_VIRT}"
   SectionEnd
+  
+  Section "un.Web_${DISPLAY_NAME}"
+    ${If} "${CREATE_VIRT_DIR}" != ""
+            Push $1
+            !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}" $1
+            ${If} "$1" != ""
+        		!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+            ${EndIf}
+            Pop $1
+
+            ; Remove the real directory
+            RmDir /r "${DEST_REAL}"
+    ${EndIf}
+  SectionEnd
 !MACROEND
 ;------------------------------------------------------------------------------
 ; This is an internal macro used by the WebXXX macros for the common code.
