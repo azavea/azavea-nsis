@@ -103,18 +103,25 @@ Var APPPOOL
 ; 
 ; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
 ; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
-!MACRO DeleteVirtualDir DEST_VIRT DISPLAY_NAME
+!MACRO DeleteVirtualDir DEST_VIRT DISPLAY_NAME WEBSITE_NAME
+  ${If} "${WEBSITE_NAME}" == ""
+        StrCpy $WEBSITE "Default Web Site"
+  ${Else}
+        StrCpy $WEBSITE "${WEBSITE_NAME}"
+  ${EndIf}
+  
   ; Remove the virtual directory
   !INSERTMACRO AvLog "Checking for ${IIS7APPCMD} (IIS 7+)..."
   ${If} ${FileExists} "${IIS7APPCMD}"
     ; IIS7 (and higher?) use the AppCmd.exe util to create/delete virtual dirs.
     !INSERTMACRO AvLog "Deleting IIS 7+ virtual directory '${DEST_VIRT}'..."
-    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE APP "Default Web Site/${DEST_VIRT}"'
+    !INSERTMACRO AvExec '"${IIS7APPCMD}" DELETE APP "$WEBSITE/${DEST_VIRT}"'
     !INSERTMACRO AvLog "Successfully deleted IIS 7+ virtual directory"
   ${Else}
     ; IIS 5 and 6 create/delete virtual dirs with this vbscript.
     StrCpy $DVDIR_VIRTUAL_NAME "${DEST_VIRT}"
     StrCpy $DVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
+    StrCpy $DVDIR_WEBSITE_NAME "$WEBSITE"
     Call un.DeleteVDir
   ${EndIf}
 !MACROEND
@@ -492,11 +499,13 @@ FunctionEnd
 ; DeleteVDir Function
 Var DVDIR_VIRTUAL_NAME
 Var DVDIR_PRODUCT_NAME
+Var DVDIR_WEBSITE_NAME
 Function un.DeleteVDir
-Push $0 
+Push $0
 Push $1
 Push $2
 !INSERTMACRO AvLog "Deleting virtual directory '$DVDIR_VIRTUAL_NAME'";
+!INSERTMACRO AvLog "Website name is '$DVDIR_WEBSITE_NAME'";
 ;Open a VBScript File in the temp dir for writing
 GetTempFileName $2
 !INSERTMACRO AvLog "Creating $2.vbs";
@@ -504,12 +513,31 @@ FileOpen $0 "$2.vbs" w
  
 ;Write the script:
 ;Remove a virtual dir named $DVDIR_VIRTUAL_NAME
+
 FileWrite $0 "On Error Resume Next$\n$\n"
+; Add a function to look up the site number
+FileWrite $0 "Function LookupSiteNumber(siteName)$\n"
+FileWrite $0 "  Set IIS = GetObject($\"IIS://localhost/w3svc$\")$\n"
+FileWrite $0 "  For Each Web in IIS$\n"
+FileWrite $0 "    If (Web.Class = $\"IIsWebServer$\") Then$\n"
+FileWrite $0 "      For Each Site in Web$\n"
+FileWrite $0 "        If (UCase(Site.Name) = $\"ROOT$\") Then$\n"
+FileWrite $0 "          Set IISWebSite = GetObject($\"IIS://localhost/w3svc/$\" & Web.Name)$\n"
+FileWrite $0 "          If (IISWebSite.ServerComment = siteName) Then$\n"
+FileWrite $0 "            LookupSiteNumber = Web.Name$\n"
+FileWrite $0 "          End If$\n"
+FileWrite $0 "        End If$\n"
+FileWrite $0 "      Next$\n"
+FileWrite $0 "    End If$\n"
+FileWrite $0 "  Next$\n"
+FileWrite $0 "End Function$\n"
+
 ;Delete the application object
-FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/1/ROOT/$DVDIR_VIRTUAL_NAME$\")$\n$\n"
+FileWrite $0 "siteNumber = LookupSiteNumber($\"$DVDIR_WEBSITE_NAME$\")$\n"
+FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/$\" + siteNumber + $\"/ROOT/$DVDIR_VIRTUAL_NAME$\")$\n$\n"
 FileWrite $0 "IISObject.AppDelete 'Delete the web application$\n"
 FileWrite $0 "If (Err.Number <> 0) Then$\n"
-FileWrite $0 "    message = $\"Error trying to delete the application at [IIS://LocalHost/W3SVC/1/ROOT/$DVDIR_VIRTUAL_NAME]$\"$\n"
+FileWrite $0 "    message = $\"Error trying to delete the application at [IIS://LocalHost/W3SVC/$\" + siteNumber + $\"/ROOT/$DVDIR_VIRTUAL_NAME]$\"$\n"
 ${If} ${Silent}
   FileWrite $0 "    WScript.Echo message$\n"
 ${Else}
@@ -518,10 +546,10 @@ ${EndIf}
 FileWrite $0 " WScript.Quit (Err.Number)$\n"
 FileWrite $0 "End If$\n$\n"
  
-FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/1/ROOT$\")$\n$\n"
+FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/$\" + siteNumber + $\"/ROOT$\")$\n$\n"
 FileWrite $0 "IIsObject.Delete $\"IIsWebVirtualDir$\", $\"$DVDIR_VIRTUAL_NAME$\"$\n"
 FileWrite $0 "If (Err.Number <> 0) Then$\n"
-FileWrite $0 "    message = $\"Error trying to delete the virtual directory '$DVDIR_VIRTUAL_NAME' at 'IIS://LocalHost/W3SVC/1/ROOT'$\"$\n"
+FileWrite $0 "    message = $\"Error trying to delete the virtual directory '$DVDIR_VIRTUAL_NAME' at 'IIS://LocalHost/W3SVC/$\" + siteNumber + $\"/ROOT'$\"$\n"
 ${If} ${Silent}
   FileWrite $0 "    WScript.Echo message$\n"
 ${Else}

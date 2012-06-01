@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
+  !INSERTMACRO RestOfWebProj"${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -254,15 +254,19 @@
 		
 	${EndIf}
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}" "${DEST_VIRT}"
+    !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}_WebsiteName" "${WEBSITE_NAME}"
   SectionEnd
   
   Section "un.Web_${DISPLAY_NAME}"
     ${If} "${CREATE_VIRT_DIR}" != ""
             Push $1
+            Push $2
             !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}" $1
+            !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}_WebsiteName" $2
             ${If} "$1" != ""
-        		!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+        		!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}" "$2"
             ${EndIf}
+            Pop $2
             Pop $1
 
             ; Remove the real directory
@@ -309,7 +313,7 @@
     Push $1
     !INSERTMACRO GetUninstallValue "WebAppURL_${DISPLAY_NAME}" $1
     ${If} "$1" != ""
-		!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}"
+		!INSERTMACRO DeleteVirtualDir "$1" "${DISPLAY_NAME}" "${WEBSITE_NAME}"
     ${EndIf}
     Pop $1
 
