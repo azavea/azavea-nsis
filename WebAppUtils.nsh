@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj"${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
 !MACROEND
 
 ;------------------------------------------------------------------------------
