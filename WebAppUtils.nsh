@@ -251,18 +251,6 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
-; A simplified RestOfWebProj for simple web app installs
-; 
-; DISPLAY_NAME    - The display name of the virtual directory, visible in IIS administrator(?)
-; DEFAULT_DOC     - The default document, such as "default.asmx".
-;
-!MACRO SimpleRestOfWebProj DISPLAY_NAME DEFAULT_DOC
-  Section "SimpleRestOfWebProj"
-    !INSERTMACRO RestOfWebProj "$APPLICATION_DIR" "$APP_URL" "$WEBSITE_NAME" "$APP_POOL_NAME" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "" "" "4" "yes"
-    !INSERTMACRO AvStandardUninstaller
-!MACROEND
-
-;------------------------------------------------------------------------------
 ; This is an internal macro used by the WebXXX macros for the common code.
 ; Those various macros copy the specific files, this takes care of the Web.Config,
 ; the virtual directories, and the uninstall section.
