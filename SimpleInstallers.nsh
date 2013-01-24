@@ -218,5 +218,70 @@
   SectionEnd
 !MACROEND
 
+;------------------------------------------------------------------------------
+; This just installs a web app, without fancy config merging.
+;
+!MACRO ReallySimpleInstall NICE_NAME MAJOR_VER MINOR_VER DEFAULT_INST_DIR APP_URL WEBSITE_NAME APP_POOL_NAME
+  Name "${NICE_NAME}"
+  OutFile "${APP_NAME}Setup.exe"
+  InstallDir "${DEFAULT_INST_DIR}"
+
+  !DEFINE APP_MAJOR_VERSION "${MAJOR_VER}"
+  !DEFINE APP_MINOR_VERSION "${MINOR_VER}"
+
+  !INCLUDE "AzaveaUtils.nsh"
+  !INCLUDE "ConfigUtils.nsh"
+  !INCLUDE "StandardQuestions.nsh"
+  !INCLUDE "MUI.nsh"
+
+  !INSERTMACRO MUI_PAGE_WELCOME
+  ; Ask the user to choose an install directory.
+  !INSERTMACRO MUI_PAGE_DIRECTORY
+
+  ; Ask the user for the virtual directories.
+  !INSERTMACRO AvStandardVirtualDirectoryPage
+  ; Ask the user for the website name.
+  !INSERTMACRO WebsiteNamePage
+  ; Ask the user for the application pool name.
+  !INSERTMACRO AppPoolNamePage
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; Extracted from 'SimpleInstall' macros
+
+  ; Page to show while installing the files.
+  !INSERTMACRO MUI_PAGE_INSTFILES
+
+  ; On uninstall, show the progress.
+  !INSERTMACRO MUI_UNPAGE_CONFIRM
+  !INSERTMACRO MUI_UNPAGE_INSTFILES
+
+  ; Tell MUI the language.
+  !INSERTMACRO MUI_LANGUAGE "English"
+
+  ; Declare the standard variables (APPLICATION_DIR, CONFIG_DIR, LOG_DIR, TEMPLATES_DIR)
+  !INSERTMACRO AvStandardSubdirVariables
+
+  Function .onInit
+      Call StartupChecks
+      !INSERTMACRO AvStandardQuestionsOnInit
+      !INSERTMACRO InitVar APP_URL "${APP_URL}"
+      !INSERTMACRO InitVar WEBSITE_NAME "${WEBSITE_NAME}"
+      !INSERTMACRO InitVar APP_POOL_NAME "${APP_POOL_NAME}"
+  FunctionEnd
+
+  Function .onVerifyInstDir
+    !INSERTMACRO AvStandardQuestionsOnVerify
+  FunctionEnd
+
+  Section "Install Basics"
+    !INSERTMACRO SaveStandardUninstallInfo "azavea_icon_lg.ico" "externals\Azavea_Common"
+  SectionEnd
+
+  ;;; End of extract from 'SimpleInstall' macros
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  !INSERTMACRO StandardLogFileSection $LOG_DIR
+!MACROEND
+
 !ENDIF ;SIMPLE_INSTALLERS_IMPORT
 

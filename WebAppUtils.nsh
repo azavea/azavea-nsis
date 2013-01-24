@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
+  !INSERTMACRO RestOfWebProj"${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -248,6 +248,18 @@
 		File /r ${SOURCE}\Scripts\*
 
 	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; A simplified RestOfWebProj for simple web app installs
+; 
+; DISPLAY_NAME    - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC     - The default document, such as "default.asmx".
+;
+!MACRO SimpleRestOfWebProj DISPLAY_NAME DEFAULT_DOC
+  Section "SimpleRestOfWebProj"
+    !INSERTMACRO RestOfWebProj "$APPLICATION_DIR" "$APP_URL" "$WEBSITE_NAME" "$APP_POOL_NAME" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "" "" "4" "yes"
+    !INSERTMACRO AvStandardUninstaller
 !MACROEND
 
 ;------------------------------------------------------------------------------
