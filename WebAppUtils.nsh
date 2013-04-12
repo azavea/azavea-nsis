@@ -31,7 +31,7 @@
     ; passed in as WEB_CONFIG).
     File /r /x _svn /x *web.config /x *.pdb ${SOURCE}\*
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes" "WebSite"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -83,7 +83,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes" "Web"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -119,7 +119,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "Web"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -184,7 +184,7 @@
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
 
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "${CREATE_VIRT_DIR}"
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "${CREATE_VIRT_DIR}" "Web"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -214,7 +214,7 @@
 		SetOutPath ${DEST_REAL}\bin
 		File ${SOURCE}\bin\*.dll
 	
-	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes" "4" "yes"
+	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "yes" "4" "yes" "REST"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -247,7 +247,7 @@
 		SetOutPath ${DEST_REAL}\Scripts
 		File /r ${SOURCE}\Scripts\*
 
-	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes"
+	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "REST"
 !MACROEND
 
 ;------------------------------------------------------------------------------
@@ -263,7 +263,10 @@
 ;                   I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
 ;                   to the correct location/name: $DEST_REAL\Web.config
 ; SUPPLEMENTARY   - Is this being installed into the same directory as something else
-!MACRO RestOfWebProj DEST_REAL DEST_VIRT WEBSITE_NAME APP_POOL_NAME DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY DOTNETVER CREATE_VIRT_DIR
+; DOTNETVER       - What is the .NET version
+; CREATE_VIRT_DIR - Should a virtual directory be created?
+; UN_TYPE         - The type of Section. One of "WebSite", "Web", "REST"
+!MACRO RestOfWebProj DEST_REAL DEST_VIRT WEBSITE_NAME APP_POOL_NAME DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SUPPLEMENTARY DOTNETVER CREATE_VIRT_DIR UN_TYPE
     ; Move the web.config file from wherever it was installed and tokenswapped to the web app folder
     ${If} "${WEB_CONFIG}" != ""		
 	
@@ -290,7 +293,7 @@
     !INSERTMACRO SaveUninstallValue "WebAppURL_${DISPLAY_NAME}_WebsiteName" "${WEBSITE_NAME}"
   SectionEnd
   
-  Section "un.Web_${DISPLAY_NAME}"
+  Section "un.${UN_TYPE}_${DISPLAY_NAME}"
     ${If} "${CREATE_VIRT_DIR}" != ""
             Push $1
             Push $2
