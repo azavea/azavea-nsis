@@ -53,6 +53,14 @@
 
 ;------------------------------------------------------------------------------
 ; Call this macro to create web folders for the "old-style" "Web Application" type of project.
+; But allows specifying Website Name, App Pool and .NET Version
+!MACRO WebApplicationWithSiteAndPool SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG WEBSITE_NAME APP_POOL_NAME DOT_NET_VER
+  !INSERTMACRO WebApplicationCopyFiles "${SOURCE}" "${DEST_REAL}" "${DISPLAY_NAME}" ""
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "${DOT_NET_VER}" "yes" "Web"
+ !MACROEND
+ 
+;------------------------------------------------------------------------------
+; Call this macro to create web folders for the "old-style" "Web Application" type of project.
 ; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
 ; or additional install steps that you will have to take care of in your specific installer.
 ; 
@@ -66,23 +74,7 @@
 ;                to the correct location/name: $DEST_REAL\Web.config
 ; SEC_ID_DEF   - The name of the macro to define containing the section ID.
 !MACRO WebApplicationWithSecID SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
-  Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
-    SetOutPath ${DEST_REAL}
-    File /r ${SOURCE}\*.as?x
-    File /nonfatal /r ${SOURCE}\*.htm
-    File /nonfatal /r ${SOURCE}\*.html
-    File /nonfatal /r ${SOURCE}\*.xml
-    File /nonfatal /r ${SOURCE}\*.sitemap
-    File /nonfatal /r ${SOURCE}\*.master
-    SetOutPath ${DEST_REAL}\images
-    File /nonfatal ${SOURCE}\images\*
-    SetOutPath ${DEST_REAL}\styles
-    File /nonfatal ${SOURCE}\styles\*
-    SetOutPath ${DEST_REAL}\js
-    File /nonfatal ${SOURCE}\js\*
-    SetOutPath ${DEST_REAL}\bin
-    File ${SOURCE}\bin\*.dll
-
+  !INSERTMACRO WebApplicationCopyFiles "${SOURCE}" "${DEST_REAL}" "${DISPLAY_NAME}" ${SEC_ID_DEF}
   !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes" "Web"
 !MACROEND
 
@@ -103,6 +95,15 @@
 ; SEC_ID_DEF   - The name of the macro to define containing the section ID.
 !MACRO WebApplicationWithSecID4 SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
   Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
+  !INSERTMACRO WebApplicationCopyFiles "${SOURCE}" "${DEST_REAL}" "${DISPLAY_NAME}" ${SEC_ID_DEF}
+  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "Web"
+!MACROEND
+
+;------------------------------------------------------------------------------
+; Internal Macro for common file operations for Web Application installs.  Used
+; by many of the WebApplication*** macros
+ !MACRO WebApplicationCopyFiles SOURCE DEST_REAL DISPLAY_NAME SEC_ID_DEF
+   Section "Web_${DISPLAY_NAME}" ${SEC_ID_DEF}
     SetOutPath ${DEST_REAL}
     File /r ${SOURCE}\*.as?x
     File /nonfatal /r ${SOURCE}\*.htm
@@ -118,10 +119,9 @@
     File /nonfatal ${SOURCE}\js\*
     SetOutPath ${DEST_REAL}\bin
     File ${SOURCE}\bin\*.dll
-
-  !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "Web"
-!MACROEND
-
+	
+ !MACROEND
+ 
 ;------------------------------------------------------------------------------
 ; Call this macro to create web folders for WebService projects.
 ; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
