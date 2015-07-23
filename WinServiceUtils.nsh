@@ -38,7 +38,7 @@
 
   MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 \
       "Do you want to start the ${SVC_DISPLAY} service now?" \
-      IDYES start IDNO dont_start
+      /SD IDYES IDYES start IDNO dont_start
   start:
     !INSERTMACRO AvLog "Starting service ${SVC_NAME}..."
     !INSERTMACRO AvExec '"sc.exe" start ${SVC_NAME}'
