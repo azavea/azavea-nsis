@@ -251,6 +251,39 @@
 !MACROEND
 
 ;------------------------------------------------------------------------------
+; Call this macro to create web folders for Mvc4WebApp projects.
+; Note that while this attempts to be all-inclusive, there may be some specialized files (like themes)
+; or additional install steps that you will have to take care of in your specific installer.
+;
+; SOURCE       - The source directory to get files from.  I.E. ..\csharp\My.Project.WebServices
+; DEST_REAL    - The destination "real" directory, I.E. $APPLICATION_DIR\Web
+; DEST_VIRT    - The destination virtual directory, I.E. "MyApplication" (http://localhost/MyApplication)
+; WEBSITE_NAME - The name of the IIS website to install to
+; APP_POOL_NAME- The name of the IIS application pool to install to
+; DISPLAY_NAME - The display name of the virtual directory, visible in IIS administrator(?)
+; DEFAULT_DOC  - The default document, such as "default.asmx".
+; WEB_CONFIG   - The location/name (at install time) of the fully token-swapped Web.config file.
+;                I.E. $CONFIG_DIR\WebAppOneWeb.config.  The file will be moved from that name/location
+;                to the correct location/name: $DEST_REAL\Web.config
+!MACRO Mvc4WebApplication SOURCE DEST_REAL DEST_VIRT WEBSITE_NAME APP_POOL_NAME DISPLAY_NAME DEFAULT_DOC WEB_CONFIG
+	Section "REST_${DISPLAY_NAME}"
+		SetOutPath ${DEST_REAL}
+		File ${SOURCE}\Global.asax
+		SetOutPath ${DEST_REAL}\Views
+		File /r ${SOURCE}\Views\*
+		SetOutPath ${DEST_REAL}\Content
+		File /r ${SOURCE}\Content\*
+		SetOutPath ${DEST_REAL}\Images
+		File /r ${SOURCE}\Images\*
+		SetOutPath ${DEST_REAL}\bin
+		File ${SOURCE}\bin\*.dll
+		SetOutPath ${DEST_REAL}\Scripts
+		File /r ${SOURCE}\Scripts\*
+
+	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "REST"
+!MACROEND
+
+;------------------------------------------------------------------------------
 ; This is an internal macro used by the WebXXX macros for the common code.
 ; Those various macros copy the specific files, this takes care of the Web.Config,
 ; the virtual directories, and the uninstall section.
