@@ -74,7 +74,11 @@
 ;                to the correct location/name: $DEST_REAL\Web.config
 ; SEC_ID_DEF   - The name of the macro to define containing the section ID.
 !MACRO WebApplicationWithSecID SOURCE DEST_REAL DEST_VIRT DISPLAY_NAME DEFAULT_DOC WEB_CONFIG SEC_ID_DEF
-  !INSERTMACRO WebApplicationCopyFiles "${SOURCE}" "${DEST_REAL}" "${DISPLAY_NAME}" ${SEC_ID_DEF}
+  !if "${SEC_ID_DEF}" = ""
+      !INSERTMACRO WebApplicationCopyFiles "${SOURCE}" "${DEST_REAL}" "${DISPLAY_NAME}" ""
+  !else
+      !INSERTMACRO WebApplicationCopyFiles "${SOURCE}" "${DEST_REAL}" "${DISPLAY_NAME}" ${SEC_ID_DEF}
+  !endif
   !INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "" "" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "" "yes" "Web"
 !MACROEND
 
