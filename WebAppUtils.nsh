@@ -278,11 +278,11 @@
 		SetOutPath ${DEST_REAL}\Content
 		File /r ${SOURCE}\Content\*
 		SetOutPath ${DEST_REAL}\Images
-		File /r ${SOURCE}\Images\*
+		File /nonfatal /r ${SOURCE}\Images\*
 		SetOutPath ${DEST_REAL}\bin
 		File ${SOURCE}\bin\*.dll
 		SetOutPath ${DEST_REAL}\Scripts
-		File /r ${SOURCE}\Scripts\*
+		File /nonfatal /r ${SOURCE}\Scripts\*
 
 	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "REST"
 !MACROEND
