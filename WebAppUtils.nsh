@@ -277,12 +277,16 @@
 		File /r ${SOURCE}\Views\*
 		SetOutPath ${DEST_REAL}\Content
 		File /r ${SOURCE}\Content\*
-		SetOutPath ${DEST_REAL}\Images
-		File /r ${SOURCE}\Images\*
+		${If} ${FileExists} `${SOURCE}\Images\*.*`
+            CreateDirectory ${DEST_REAL}\Images
+		    CopyFiles ${SOURCE}\Images\*.* ${DEST_REAL}\Images
+        ${EndIf}
 		SetOutPath ${DEST_REAL}\bin
 		File ${SOURCE}\bin\*.dll
-		SetOutPath ${DEST_REAL}\Scripts
-		File /r ${SOURCE}\Scripts\*
+        ${If} ${FileExists} `${SOURCE}\Scripts\*.*`
+            CreateDirectory ${DEST_REAL}\Scripts
+		    CopyFiles ${SOURCE}\Scripts\*.* ${DEST_REAL}\Scripts
+        ${EndIf}
 
 	!INSERTMACRO RestOfWebProj "${DEST_REAL}" "${DEST_VIRT}" "${WEBSITE_NAME}" "${APP_POOL_NAME}" "${DISPLAY_NAME}" "${DEFAULT_DOC}" "${WEB_CONFIG}" "" "4" "yes" "REST"
 !MACROEND
