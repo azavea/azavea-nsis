@@ -93,6 +93,31 @@
   !INSERTMACRO EasyCustomPageEnd
 !MACROEND
 
+; Prompts the user for the website name, suggestion made based on customer
+; installation choice
+!MACRO WebsiteNamePageSuggest
+  !INSERTMACRO CreateEasyCustomTextVar "WEBSITE_NAME" ""
+  !INSERTMACRO EasyCustomPageWithPreBegin "WebsiteName" "Website Name" "Please enter the name of the IIS website" defaultWebSiteName
+    !INSERTMACRO EasyCustomTextBox "WEBSITE_NAME" "Website name:"
+  !INSERTMACRO EasyCustomPageEnd
+
+  Function defaultWebSiteName
+    ${If} $InstallLocation_SELECTION == "Azavea_Internal"
+      StrCpy $WEBSITE_NAME "Default Web Site"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal"
+      StrCpy $WEBSITE_NAME "Default Web Site"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal_Test"
+      StrCpy $WEBSITE_NAME "Default Web Site"
+    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public"
+      StrCpy $WEBSITE_NAME "phila.gov"
+    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public_Test"
+      StrCpy $WEBSITE_NAME "test.phila.gov"
+    ${Else}
+      StrCpy $WEBSITE_NAME "Default Web Site"
+    ${EndIf}
+  FunctionEnd
+!MACROEND
+
 ;--------------------------------------------------------------------------------------
 ; Prompts the user for the application pool name
 !MACRO AppPoolNamePage
@@ -100,6 +125,31 @@
   !INSERTMACRO EasyCustomPageBegin "AppPoolName" "Application Pool Name" "Please enter the name of the IIS application pool"
     !INSERTMACRO EasyCustomTextBox "APP_POOL_NAME" "Applicaton pool name:"
   !INSERTMACRO EasyCustomPageEnd
+!MACROEND
+
+;--------------------------------------------------------------------------------------
+; Prompts the user for the application pool name, suggests name based on customer
+!MACRO AppPoolNamePageSuggest
+  !INSERTMACRO CreateEasyCustomTextVar "APP_POOL_NAME" ""
+  !INSERTMACRO EasyCustomPageWithPreBegin "AppPoolName" "Application Pool Name" "Please enter the name of the IIS application pool" defaultAppPool
+    !INSERTMACRO EasyCustomTextBox "APP_POOL_NAME" "Applicaton pool name:"
+  !INSERTMACRO EasyCustomPageEnd
+
+  Function defaultAppPool
+    ${If} $InstallLocation_SELECTION == "Azavea_Internal"
+      StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal"
+      StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal_Test"
+      StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
+    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public"
+      StrCpy $APP_POOL_NAME "Water"
+    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public_Test"
+      StrCpy $APP_POOL_NAME "Water"
+    ${Else}
+      StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
+    ${EndIf}
+  FunctionEnd
 !MACROEND
 
 ;--------------------------------------------------------------------------------------
@@ -125,6 +175,34 @@
   !INSERTMACRO EasyCustomPageBegin "WebAppURL" "Virtual Directory" "Please choose the virtual directory (http://localhost/virtual_directory) for this application."
     !INSERTMACRO EasyCustomTextBox "APP_URL" "Web Application:"
   !INSERTMACRO EasyCustomPageEnd
+!MACROEND
+
+;--------------------------------------------------------------------------------------
+; Standard page to ask for the name of the virtual directory, based on customer
+; selection.
+; Declares a variable "APP_URL" that will contain the virtual
+; directory name chosen by the user.
+; If you set that variable in .onInit, that value will be used
+; as the default when this page is shown.
+!MACRO AvStandardVirtualDirectoryPageSuggest OPTION_A OPTION_B
+  !INSERTMACRO CreateEasyCustomURLVar "APP_URL"
+  !INSERTMACRO EasyCustomPageWithPreBegin "WebAppURL" "Virtual Directory" "Please choose the virtual directory (http://localhost/virtual_directory) for this application." defaultAppUrl
+    !INSERTMACRO EasyCustomTextBox "APP_URL" "Web Application:"
+  !INSERTMACRO EasyCustomPageEnd
+
+  Function defaultAppUrl
+    ${If} $InstallLocation_SELECTION == "Azavea_Internal"
+      StrCpy $APP_URL "${OPTION_A}"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal"
+      StrCpy $APP_URL "${OPTION_A}"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal_Test"
+      StrCpy $APP_URL "${OPTION_A}"
+    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public"
+      StrCpy $APP_URL "${OPTION_B}"
+    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public_Test"
+      StrCpy $APP_URL "${OPTION_B}"
+    ${EndIf}
+  FunctionEnd
 !MACROEND
 
 !ENDIF ;STANDARD_QUESTIONS_IMPORT
