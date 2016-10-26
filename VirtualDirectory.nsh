@@ -93,6 +93,7 @@ Var APPPOOL
     StrCpy $CVDIR_PRODUCT_NAME "${DISPLAY_NAME}"
     StrCpy $CVDIR_DEFAULT_DOC "${DEFAULT_DOC}"
     StrCpy $CVDIR_WEBSITE_NAME "$WEBSITE"
+    StrCpy $CVDIR_APP_POOL "$APPPOOL"
     Call CreateVDirForNamedWebsite
   ${EndIf}
   !INSERTMACRO SetASPPermissions "${DEST_REAL}" "R"
@@ -331,6 +332,7 @@ FunctionEnd
 ;Var CVDIR_PRODUCT_NAME
 ;Var CVDIR_DEFAULT_DOC
 Var CVDIR_WEBSITE_NAME
+Var CVDIR_APP_POOL
 Function CreateVDirForNamedWebsite
 Push $0
 Push $1
@@ -412,7 +414,6 @@ FileWrite $0 "Dir.Path = $\"$CVDIR_REAL_PATH$\"$\n"
 FileWrite $0 "Dir.AccessRead = True$\n"
 FileWrite $0 "Dir.AccessWrite = False$\n"
 FileWrite $0 "Dir.AccessScript = True$\n"
-FileWrite $0 "Dir.AppFriendlyName = $\"$CVDIR_VIRTUAL_NAME$\"$\n"
 FileWrite $0 "Dir.EnableDirBrowsing = False$\n"
 FileWrite $0 "Dir.ContentIndexed = False$\n"
 FileWrite $0 "Dir.DontLog = True$\n"
@@ -422,9 +423,16 @@ FileWrite $0 "Dir.AspBufferingOn = True$\n"
 FileWrite $0 "Dir.AspAllowSessionState = True$\n"
 FileWrite $0 "Dir.AspSessionTimeout = 30$\n"
 FileWrite $0 "Dir.AspScriptTimeout = 900$\n"
-FileWrite $0 "Dir.SetInfo$\n"
+FileWrite $0 "Dir.AppPoolId = $\"$CVDIR_APP_POOL$\"$\n"
+FileWrite $0 "Dir.SetInfo $\n"
+
 FileWrite $0 "Set IISObject = GetObject($\"IIS://LocalHost/W3SVC/$\"+LookupSiteNumber($\"$CVDIR_WEBSITE_NAME$\")+$\"/root/$CVDIR_VIRTUAL_NAME$\")$\n"
 FileWrite $0 "IISObject.AppCreate2(2) 'Create a process-pooled web application$\n"
+; App Name has to be set after it's already an Application, from above
+; Use the Virtual Dir name, but drop the preceeding /
+FileWrite $0 "IISObject.AppFriendlyName = Mid($\"$CVDIR_VIRTUAL_NAME$\", Instr($\"$CVDIR_VIRTUAL_NAME$\", $\"/$\") + 1)$\n"
+FileWrite $0 "IISObject.SetInfo $\n"
+
 FileWrite $0 "If (Err.Number <> 0) Then$\n"
 FileWrite $0 " message = $\"Error $\" & Err.Number$\n"
 FileWrite $0 " message = message & $\" trying to create the virtual directory at 'IIS://LocalHost/W3SVC/$\"+LookupSiteNumber($\"$CVDIR_WEBSITE_NAME$\")+$\"/root/$CVDIR_VIRTUAL_NAME'$\" & chr(13)$\n"
