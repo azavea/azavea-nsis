@@ -108,10 +108,10 @@
       StrCpy $WEBSITE_NAME "Default Web Site"
     ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal_Test"
       StrCpy $WEBSITE_NAME "Default Web Site"
-    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public"
-      StrCpy $WEBSITE_NAME "phila.gov"
-    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public_Test"
-      StrCpy $WEBSITE_NAME "test.phila.gov"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Public"
+      StrCpy $WEBSITE_NAME "Default Web Site"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Public_Test"
+      StrCpy $WEBSITE_NAME "Default Web Site"
     ${Else}
       StrCpy $WEBSITE_NAME "Default Web Site"
     ${EndIf}
@@ -142,10 +142,10 @@
       StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
     ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal_Test"
       StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
-    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public"
-      StrCpy $APP_POOL_NAME "Water"
-    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public_Test"
-      StrCpy $APP_POOL_NAME "Water"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Public"
+      StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Public_Test"
+      StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
     ${Else}
       StrCpy $APP_POOL_NAME "SW AppPool .NET v4.0"
     ${EndIf}
@@ -197,9 +197,9 @@
       StrCpy $APP_URL "${OPTION_A}"
     ${ElseIf} $InstallLocation_SELECTION == "PWD_Internal_Test"
       StrCpy $APP_URL "${OPTION_A}"
-    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Public"
       StrCpy $APP_URL "${OPTION_B}"
-    ${ElseIf} $InstallLocation_SELECTION == "DOT_Public_Test"
+    ${ElseIf} $InstallLocation_SELECTION == "PWD_Public_Test"
       StrCpy $APP_URL "${OPTION_B}"
     ${EndIf}
   FunctionEnd
